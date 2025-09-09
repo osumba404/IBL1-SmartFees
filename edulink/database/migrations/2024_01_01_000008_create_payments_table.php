@@ -19,7 +19,7 @@ return new class extends Migration
             
             // Foreign Keys
             $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-            $table->foreignId('student_enrollment_id')->constrained('student_enrollments')->onDelete('cascade');
+            $table->foreignId('student_enrollment_id')->nullable()->constrained('student_enrollments')->onDelete('set null');
             
             // Payment Identification
             $table->string('payment_reference')->unique(); // e.g., PAY2024001
@@ -61,7 +61,7 @@ return new class extends Migration
             $table->foreignId('verified_by')->nullable()->constrained('users')->onDelete('set null');
             
             // Payment Timing
-            $table->timestamp('payment_date');
+            $table->timestamp('payment_date')->nullable();
             $table->timestamp('processed_at')->nullable();
             $table->date('value_date')->nullable(); // When funds are available
             

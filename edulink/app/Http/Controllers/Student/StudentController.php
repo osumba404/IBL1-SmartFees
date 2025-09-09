@@ -23,10 +23,10 @@ class StudentController extends Controller
         $student = Auth::guard('student')->user();
         
         // Get all available courses
-        $availableCourses = Course::where('is_active', true)
+        $availableCourses = Course::where('status', 'active')
             ->where('enrollment_open', true)
             ->with(['feeStructures' => function($query) {
-                $query->where('is_active', true)->latest();
+                $query->where('status', 'active')->latest();
             }])
             ->get();
 

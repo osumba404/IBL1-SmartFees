@@ -32,14 +32,14 @@ class AdminController extends Controller
         }
         
         if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
+            $query->where('status', $request->status);
         }
 
         $feeStructures = $query->latest()->paginate(15)->withQueryString();
         
         // Get filter options
-        $courses = Course::where('is_active', true)->get();
-        $semesters = Semester::where('is_active', true)->get();
+        $courses = Course::where('status', 'active')->get();
+        $semesters = Semester::where('status', 'active')->get();
 
         return view('admin.fees.index', compact('feeStructures', 'courses', 'semesters', 'admin'));
     }
@@ -50,8 +50,8 @@ class AdminController extends Controller
     public function createFeeStructure(): View
     {
         $admin = Auth::guard('admin')->user();
-        $courses = Course::where('is_active', true)->get();
-        $semesters = Semester::where('is_active', true)->get();
+        $courses = Course::where('status', 'active')->get();
+        $semesters = Semester::where('status', 'active')->get();
 
         return view('admin.fees.create', compact('courses', 'semesters', 'admin'));
     }
@@ -77,14 +77,14 @@ class AdminController extends Controller
             'grace_period_days' => 'nullable|integer|min:0',
             'installment_allowed' => 'boolean',
             'max_installments' => 'nullable|integer|min:2|max:12',
-            'is_active' => 'boolean',
+            'status' => 'boolean',
         ]);
 
         // Check for existing fee structure
         $existing = FeeStructure::where([
             'course_id' => $request->course_id,
             'semester_id' => $request->semester_id,
-        ])->where('is_active', true)->first();
+        ])->where('status', true)->first();
 
         if ($existing) {
             return back()->withErrors([
@@ -121,7 +121,7 @@ class AdminController extends Controller
             'grace_period_days' => $request->grace_period_days ?? 0,
             'installment_allowed' => $request->boolean('installment_allowed'),
             'max_installments' => $request->max_installments,
-            'is_active' => $request->boolean('is_active', true),
+            'status' => $request->boolean('status', true),
         ]);
 
         return redirect()->route('admin.fees.index')
@@ -134,8 +134,8 @@ class AdminController extends Controller
     public function editFeeStructure(FeeStructure $feeStructure): View
     {
         $admin = Auth::guard('admin')->user();
-        $courses = Course::where('is_active', true)->get();
-        $semesters = Semester::where('is_active', true)->get();
+        $courses = Course::where('status', 'active')->get();
+        $semesters = Semester::where('status', 'active')->get();
 
         return view('admin.fees.edit', compact('feeStructure', 'courses', 'semesters', 'admin'));
     }
@@ -161,14 +161,14 @@ class AdminController extends Controller
             'grace_period_days' => 'nullable|integer|min:0',
             'installment_allowed' => 'boolean',
             'max_installments' => 'nullable|integer|min:2|max:12',
-            'is_active' => 'boolean',
+            'status' => 'boolean',
         ]);
 
         // Check for existing fee structure (excluding current one)
         $existing = FeeStructure::where([
             'course_id' => $request->course_id,
             'semester_id' => $request->semester_id,
-        ])->where('is_active', true)
+        ])->where('status', true)
           ->where('id', '!=', $feeStructure->id)
           ->first();
 
@@ -207,7 +207,7 @@ class AdminController extends Controller
             'grace_period_days' => $request->grace_period_days ?? 0,
             'installment_allowed' => $request->boolean('installment_allowed'),
             'max_installments' => $request->max_installments,
-            'is_active' => $request->boolean('is_active'),
+            'status' => $request->boolean('status'),
         ]);
 
         return redirect()->route('admin.fees.index')
@@ -238,10 +238,10 @@ class AdminController extends Controller
     public function toggleFeeStructureStatus(FeeStructure $feeStructure): RedirectResponse
     {
         $feeStructure->update([
-            'is_active' => !$feeStructure->is_active
+            'status' => !$feeStructure->status
         ]);
 
-        $status = $feeStructure->is_active ? 'activated' : 'deactivated';
+        $status = $feeStructure->status ? 'activated' : 'deactivated';
         
         return back()->with('success', "Fee structure {$status} successfully.");
     }
@@ -260,7 +260,7 @@ class AdminController extends Controller
         $existing = FeeStructure::where([
             'course_id' => $feeStructure->course_id,
             'semester_id' => $request->target_semester_id,
-        ])->where('is_active', true)->first();
+        ])->where('status', true)->first();
 
         if ($existing) {
             return back()->withErrors([

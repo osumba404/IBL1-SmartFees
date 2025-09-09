@@ -33,7 +33,7 @@ class SemesterController extends Controller
         }
         
         if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
+            $query->where('status', $request->status);
         }
         
         if ($request->filled('academic_year')) {
@@ -81,7 +81,7 @@ class SemesterController extends Controller
             'grace_period_days' => 'nullable|integer|min:0|max:30',
             'max_credits' => 'nullable|integer|min:1',
             'min_credits' => 'nullable|integer|min:1',
-            'is_active' => 'boolean',
+            'status' => 'required|in:active,inactive',
         ]);
 
         // Validate credit limits
@@ -105,7 +105,7 @@ class SemesterController extends Controller
             'grace_period_days' => $request->grace_period_days ?? 0,
             'max_credits' => $request->max_credits,
             'min_credits' => $request->min_credits,
-            'is_active' => $request->boolean('is_active', true),
+            'status' => $request->status,
         ]);
 
         return redirect()->route('admin.semesters.show', $semester)
@@ -189,7 +189,7 @@ class SemesterController extends Controller
             'grace_period_days' => 'nullable|integer|min:0|max:30',
             'max_credits' => 'nullable|integer|min:1',
             'min_credits' => 'nullable|integer|min:1',
-            'is_active' => 'boolean',
+            'status' => 'required|in:active,inactive',
         ]);
 
         // Validate credit limits
@@ -213,7 +213,7 @@ class SemesterController extends Controller
             'grace_period_days' => $request->grace_period_days ?? 0,
             'max_credits' => $request->max_credits,
             'min_credits' => $request->min_credits,
-            'is_active' => $request->boolean('is_active'),
+            'status' => $request->status,
         ]);
 
         return redirect()->route('admin.semesters.show', $semester)
@@ -244,10 +244,10 @@ class SemesterController extends Controller
     public function toggleStatus(Semester $semester): RedirectResponse
     {
         $semester->update([
-            'is_active' => !$semester->is_active
+            'status' => $semester->status === 'active' ? 'inactive' : 'active'
         ]);
 
-        $status = $semester->is_active ? 'activated' : 'deactivated';
+        $status = $semester->status === 'active' ? 'activated' : 'deactivated';
         
         return back()->with('success', "Semester {$status} successfully.");
     }
@@ -325,7 +325,7 @@ class SemesterController extends Controller
             $newSemester->late_fee_start_date = $newSemester->start_date->copy()->addDays($daysDiff);
         }
         
-        $newSemester->is_active = false; // Start as inactive
+        $newSemester->status = 'inactive'; // Start as inactive
         $newSemester->save();
 
         return redirect()->route('admin.semesters.show', $newSemester)
@@ -347,12 +347,12 @@ class SemesterController extends Controller
         
         switch ($request->action) {
             case 'activate':
-                $count = $semesters->update(['is_active' => true]);
+                $count = $semesters->update(['status' => 'active']);
                 $message = "Activated {$count} semesters.";
                 break;
                 
             case 'deactivate':
-                $count = $semesters->update(['is_active' => false]);
+                $count = $semesters->update(['status' => 'inactive']);
                 $message = "Deactivated {$count} semesters.";
                 break;
         }
@@ -371,7 +371,7 @@ class SemesterController extends Controller
         
         // Apply same filters as index
         if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
+            $query->where('status', $request->status);
         }
         
         if ($request->filled('academic_year')) {
@@ -415,7 +415,7 @@ class SemesterController extends Controller
                     $semester->fee_due_date->format('Y-m-d'),
                     $semester->enrollments_count,
                     $semester->fee_structures_count,
-                    $semester->is_active ? 'Active' : 'Inactive',
+                    $semester->status,
                 ]);
             }
 
@@ -460,7 +460,7 @@ class SemesterController extends Controller
     public function checkRegistrationStatus(Semester $semester)
     {
         $now = now();
-        $isOpen = $semester->is_active && 
+        $isOpen = $semester->status === 'active' && 
                   $now->between($semester->registration_start, $semester->registration_end);
 
         return response()->json([

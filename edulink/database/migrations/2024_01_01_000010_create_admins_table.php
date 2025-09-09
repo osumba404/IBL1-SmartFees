@@ -18,36 +18,31 @@ return new class extends Migration
             $table->id();
             
             // Authentication fields
-            $table->string('admin_id')->unique(); // e.g., ADM001
+            $table->string('name'); // Full name
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             
             // Personal Information
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->string('middle_name')->nullable();
             $table->string('phone')->nullable();
             $table->string('employee_id')->unique()->nullable();
             
             // Role and Permissions
-            $table->enum('role', ['super_admin', 'admin', 'finance_officer', 'registrar', 'academic_officer', 'support_staff'])->default('admin');
-            $table->json('permissions')->nullable(); // Store specific permissions as JSON
-            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
+            $table->enum('role', ['super_admin', 'admin'])->default('admin');
+            $table->boolean('is_active')->default(true);
             
             // Department Information
             $table->string('department')->nullable();
             $table->string('position')->nullable();
             $table->date('hire_date')->nullable();
             
-            // Access Control
+            // Access Control Permissions
             $table->boolean('can_manage_students')->default(false);
             $table->boolean('can_manage_courses')->default(false);
+            $table->boolean('can_manage_payments')->default(false);
+            $table->boolean('can_view_reports')->default(false);
+            $table->boolean('can_approve_students')->default(false);
             $table->boolean('can_manage_fees')->default(false);
-            $table->boolean('can_view_payments')->default(false);
-            $table->boolean('can_process_payments')->default(false);
-            $table->boolean('can_generate_reports')->default(false);
-            $table->boolean('can_manage_admins')->default(false);
             
             // Security
             $table->timestamp('last_login_at')->nullable();
@@ -61,9 +56,9 @@ return new class extends Migration
             $table->timestamps();
             
             // Indexes for performance
-            $table->index(['role', 'status']);
+            $table->index(['role', 'is_active']);
             $table->index(['department', 'position']);
-            $table->index(['email', 'admin_id']);
+            $table->index(['email']);
         });
     }
 

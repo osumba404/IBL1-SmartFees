@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-header">
     <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Welcome back, {{ $admin->first_name }}! Here's what's happening at Edulink International College.</p>
+    <p class="page-subtitle">Welcome back, {{ $admin->name }}! Here's what's happening at Edulink International College.</p>
 </div>
 
 <!-- Statistics Cards -->

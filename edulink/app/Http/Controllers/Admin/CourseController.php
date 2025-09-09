@@ -33,7 +33,7 @@ class CourseController extends Controller
         }
         
         if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
+            $query->where('status', $request->status);
         }
         
         if ($request->filled('level')) {
@@ -79,8 +79,8 @@ class CourseController extends Controller
             'prerequisites.*' => 'exists:courses,id',
             'enrollment_capacity' => 'nullable|integer|min:1',
             'tuition_fee' => 'required|numeric|min:0',
-            'enrollment_open' => 'boolean',
-            'is_active' => 'boolean',
+            'enrollment_open' => 'required|in:yes,no',
+            'status' => 'required|in:active,inactive,discontinued',
         ]);
 
         $course = Course::create([
@@ -94,8 +94,8 @@ class CourseController extends Controller
             'prerequisites' => $request->prerequisites ?? [],
             'enrollment_capacity' => $request->enrollment_capacity,
             'tuition_fee' => $request->tuition_fee,
-            'enrollment_open' => $request->boolean('enrollment_open', true),
-            'is_active' => $request->boolean('is_active', true),
+            'enrollment_open' => $request->enrollment_open === 'yes',
+            'status' => $request->status,
         ]);
 
         return redirect()->route('admin.courses.show', $course)
@@ -148,7 +148,7 @@ class CourseController extends Controller
         
         // Get available courses for prerequisites (excluding current course)
         $availableCourses = Course::where('id', '!=', $course->id)
-            ->where('is_active', true)
+            ->where('status', 'active')
             ->get();
 
         return view('admin.courses.edit', compact('course', 'availableCourses', 'admin'));
@@ -171,8 +171,8 @@ class CourseController extends Controller
             'prerequisites.*' => 'exists:courses,id',
             'enrollment_capacity' => 'nullable|integer|min:1',
             'tuition_fee' => 'required|numeric|min:0',
-            'enrollment_open' => 'boolean',
-            'is_active' => 'boolean',
+            'enrollment_open' => 'required|in:yes,no',
+            'status' => 'required|in:active,inactive,discontinued',
         ]);
 
         // Check for circular dependencies in prerequisites
@@ -197,8 +197,8 @@ class CourseController extends Controller
             'prerequisites' => $request->prerequisites ?? [],
             'enrollment_capacity' => $request->enrollment_capacity,
             'tuition_fee' => $request->tuition_fee,
-            'enrollment_open' => $request->boolean('enrollment_open'),
-            'is_active' => $request->boolean('is_active'),
+            'enrollment_open' => $request->enrollment_open === 'yes',
+            'status' => $request->status,
         ]);
 
         return redirect()->route('admin.courses.show', $course)
@@ -237,10 +237,10 @@ class CourseController extends Controller
     public function toggleStatus(Course $course): RedirectResponse
     {
         $course->update([
-            'is_active' => !$course->is_active
+            'status' => $course->status === 'active' ? 'inactive' : 'active'
         ]);
 
-        $status = $course->is_active ? 'activated' : 'deactivated';
+        $status = $course->status === 'active' ? 'activated' : 'deactivated';
         
         return back()->with('success', "Course {$status} successfully.");
     }
@@ -289,7 +289,7 @@ class CourseController extends Controller
         $newCourse = $course->replicate();
         $newCourse->name = $request->name;
         $newCourse->code = strtoupper($request->code);
-        $newCourse->is_active = false; // Start as inactive
+        $newCourse->status = 'inactive'; // Start as inactive
         $newCourse->enrollment_open = false;
         $newCourse->save();
 
@@ -312,12 +312,12 @@ class CourseController extends Controller
         
         switch ($request->action) {
             case 'activate':
-                $count = $courses->update(['is_active' => true]);
+                $count = $courses->update(['status' => 'active']);
                 $message = "Activated {$count} courses.";
                 break;
                 
             case 'deactivate':
-                $count = $courses->update(['is_active' => false]);
+                $count = $courses->update(['status' => 'inactive']);
                 $message = "Deactivated {$count} courses.";
                 break;
                 
@@ -346,7 +346,7 @@ class CourseController extends Controller
         
         // Apply same filters as index
         if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
+            $query->where('status', $request->status);
         }
         
         if ($request->filled('level')) {
@@ -388,7 +388,7 @@ class CourseController extends Controller
                     $course->tuition_fee,
                     $course->students_count,
                     $course->enrollments_count,
-                    $course->is_active ? 'Active' : 'Inactive',
+                    $course->status,
                     $course->enrollment_open ? 'Open' : 'Closed',
                 ]);
             }

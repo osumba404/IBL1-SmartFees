@@ -80,16 +80,46 @@ class AdminAuthController extends Controller
         $admin = Auth::guard('admin')->user();
         
         // Get dashboard statistics
+        $currentMonth = now();
+        $lastMonth = now()->subMonth();
+        
         $stats = [
             'total_students' => Student::count(),
             'active_students' => Student::where('status', 'active')->count(),
             'pending_students' => Student::where('status', 'pending_verification')->count(),
             'suspended_students' => Student::where('status', 'suspended')->count(),
+            'new_students_this_month' => Student::whereYear('created_at', $currentMonth->year)
+                ->whereMonth('created_at', $currentMonth->month)
+                ->count(),
             'total_courses' => Course::count(),
-            'active_courses' => Course::where('is_active', true)->count(),
+            'active_courses' => Course::where('status', 'active')->count(),
             'total_semesters' => Semester::count(),
-            'active_semesters' => Semester::where('is_active', true)->count(),
+            'active_semesters' => Semester::where('status', 'active')->count(),
+            'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
+            'pending_payments' => Payment::where('status', 'pending')->count(),
+            'pending_amount' => Payment::where('status', 'pending')->sum('amount'),
+            'overdue_payments' => Payment::where('status', 'pending')
+                ->where('created_at', '<', now()->subDays(30))
+                ->count(),
+            'overdue_amount' => Payment::where('status', 'pending')
+                ->where('created_at', '<', now()->subDays(30))
+                ->sum('amount'),
         ];
+
+        // Calculate revenue growth percentage
+        $currentMonthRevenue = Payment::where('status', 'completed')
+            ->whereYear('created_at', $currentMonth->year)
+            ->whereMonth('created_at', $currentMonth->month)
+            ->sum('amount');
+            
+        $lastMonthRevenue = Payment::where('status', 'completed')
+            ->whereYear('created_at', $lastMonth->year)
+            ->whereMonth('created_at', $lastMonth->month)
+            ->sum('amount');
+            
+        $stats['revenue_growth_percentage'] = $lastMonthRevenue > 0 
+            ? (($currentMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100 
+            : 0;
 
         // Payment statistics
         $paymentStats = [
@@ -138,6 +168,57 @@ class AdminAuthController extends Controller
             ];
         }
 
+        // Chart data for dashboard charts
+        $chartData = [
+            'revenue' => [
+                'labels' => collect($monthlyTrends)->pluck('month')->toArray(),
+                'data' => collect($monthlyTrends)->pluck('amount')->toArray(),
+            ],
+            'paymentMethods' => [
+                'labels' => ['M-Pesa', 'Stripe', 'Bank Transfer', 'Cash', 'Other'],
+                'data' => [
+                    Payment::where('status', 'completed')->where('payment_method', 'mpesa')->count(),
+                    Payment::where('status', 'completed')->where('payment_method', 'stripe')->count(),
+                    Payment::where('status', 'completed')->where('payment_method', 'bank_transfer')->count(),
+                    Payment::where('status', 'completed')->where('payment_method', 'cash')->count(),
+                    Payment::where('status', 'completed')->whereNotIn('payment_method', ['mpesa', 'stripe', 'bank_transfer', 'cash'])->count(),
+                ]
+            ]
+        ];
+
+        // System alerts
+        $alerts = collect();
+        
+        // Add alert for pending student approvals
+        if ($admin->can_approve_students && $stats['pending_students'] > 0) {
+            $alerts->push([
+                'type' => 'warning',
+                'icon' => 'exclamation-triangle',
+                'title' => 'Pending Approvals',
+                'message' => "You have {$stats['pending_students']} students waiting for approval."
+            ]);
+        }
+        
+        // Add alert for overdue payments
+        if ($stats['overdue_payments'] > 0) {
+            $alerts->push([
+                'type' => 'danger',
+                'icon' => 'clock-history',
+                'title' => 'Overdue Payments',
+                'message' => "There are {$stats['overdue_payments']} overdue payments totaling KSh " . number_format($stats['overdue_amount'], 2) . "."
+            ]);
+        }
+        
+        // Add alert for failed payments
+        if ($paymentStats['failed_payments'] > 5) {
+            $alerts->push([
+                'type' => 'warning',
+                'icon' => 'x-circle',
+                'title' => 'Failed Payments',
+                'message' => "There are {$paymentStats['failed_payments']} failed payment attempts that may need attention."
+            ]);
+        }
+
         return view('admin.dashboard', compact(
             'admin',
             'stats',
@@ -145,7 +226,9 @@ class AdminAuthController extends Controller
             'recentPayments',
             'recentStudents',
             'pendingApprovals',
-            'monthlyTrends'
+            'monthlyTrends',
+            'chartData',
+            'alerts'
         ));
     }
 

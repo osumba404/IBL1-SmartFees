@@ -21,28 +21,24 @@ class Admin extends Authenticatable
      * The attributes that are mass assignable.
      */
     protected $fillable = [
-        'admin_id',
+        'name',
         'email',
         'password',
-        'first_name',
-        'last_name',
-        'middle_name',
         'phone',
         'employee_id',
         'role',
-        'permissions',
-        'status',
+        'is_active',
         'department',
         'position',
         'hire_date',
         'can_manage_students',
         'can_manage_courses',
+        'can_manage_payments',
+        'can_view_reports',
+        'can_approve_students',
         'can_manage_fees',
-        'can_view_payments',
-        'can_process_payments',
-        'can_generate_reports',
-        'can_manage_admins',
         'force_password_change',
+        'email_verified_at',
     ];
 
     /**
@@ -64,14 +60,13 @@ class Admin extends Authenticatable
             'hire_date' => 'date',
             'last_login_at' => 'datetime',
             'locked_until' => 'datetime',
-            'permissions' => 'array',
+            'is_active' => 'boolean',
             'can_manage_students' => 'boolean',
             'can_manage_courses' => 'boolean',
+            'can_manage_payments' => 'boolean',
+            'can_view_reports' => 'boolean',
+            'can_approve_students' => 'boolean',
             'can_manage_fees' => 'boolean',
-            'can_view_payments' => 'boolean',
-            'can_process_payments' => 'boolean',
-            'can_generate_reports' => 'boolean',
-            'can_manage_admins' => 'boolean',
             'force_password_change' => 'boolean',
         ];
     }
