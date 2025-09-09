@@ -65,7 +65,7 @@ Route::prefix('student')->name('student.')->group(function () {
 // Admin Authentication Routes
 Route::prefix('admin')->name('admin.')->group(function () {
     // Guest routes (not authenticated)
-    Route::middleware('guest:admin')->group(function () {
+    Route::middleware(['web', 'guest:admin'])->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
         Route::post('/login', [AdminAuthController::class, 'login']);
         
@@ -77,7 +77,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     });
 
     // Authenticated admin routes
-    Route::middleware('auth:admin')->group(function () {
+    Route::middleware(['web', 'auth:admin'])->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [AdminAuthController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [AdminAuthController::class, 'profile'])->name('profile');
