@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('student.login');
 });
 
 // Student Authentication Routes
@@ -72,6 +72,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/profile', [AdminAuthController::class, 'updateProfile'])->name('profile.update');
         Route::put('/password', [AdminAuthController::class, 'changePassword'])->name('password.change');
         
+        // Dashboard data routes
+        Route::get('/dashboard/revenue-data', [AdminAuthController::class, 'getRevenueData'])->name('dashboard.revenue-data');
+        
         // Student Management Routes (requires manage_students permission)
         Route::middleware('admin.auth:manage_students')->prefix('students')->name('students.')->group(function () {
             Route::get('/', [StudentManagementController::class, 'index'])->name('index');
@@ -86,6 +89,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{student}/activate', [StudentManagementController::class, 'activate'])->name('activate');
             Route::get('/{student}/payments', [StudentManagementController::class, 'payments'])->name('payments');
             Route::get('/{student}/enrollments', [StudentManagementController::class, 'enrollments'])->name('enrollments');
+            Route::post('/bulk-update', [StudentManagementController::class, 'bulkUpdate'])->name('bulk-update');
+            Route::get('/export', [StudentManagementController::class, 'export'])->name('export');
         });
         
         // Course Management Routes (requires manage_courses permission)
@@ -100,6 +105,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{course}/toggle-status', [CourseController::class, 'toggleStatus'])->name('toggle-status');
             Route::get('/{course}/students', [CourseController::class, 'students'])->name('students');
             Route::get('/{course}/fee-structures', [CourseController::class, 'feeStructures'])->name('fee-structures');
+            Route::post('/{course}/duplicate', [CourseController::class, 'duplicate'])->name('duplicate');
+            Route::post('/bulk-update', [CourseController::class, 'bulkUpdate'])->name('bulk-update');
+            Route::get('/export', [CourseController::class, 'export'])->name('export');
+            Route::get('/{course}/stats', [CourseController::class, 'getStats'])->name('stats');
         });
         
         // Semester Management Routes (requires manage_courses permission)
@@ -113,6 +122,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/{semester}', [SemesterController::class, 'destroy'])->name('destroy');
             Route::post('/{semester}/toggle-status', [SemesterController::class, 'toggleStatus'])->name('toggle-status');
             Route::get('/{semester}/enrollments', [SemesterController::class, 'enrollments'])->name('enrollments');
+            Route::post('/{semester}/duplicate', [SemesterController::class, 'duplicate'])->name('duplicate');
+            Route::post('/bulk-update', [SemesterController::class, 'bulkUpdate'])->name('bulk-update');
+            Route::get('/export', [SemesterController::class, 'export'])->name('export');
+            Route::get('/{semester}/stats', [SemesterController::class, 'getStats'])->name('stats');
+            Route::get('/{semester}/registration-status', [SemesterController::class, 'checkRegistrationStatus'])->name('registration-status');
         });
         
         // Payment Management Routes (requires manage_payments permission)
@@ -124,16 +138,23 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/pending', [AdminPaymentController::class, 'pending'])->name('pending');
             Route::get('/failed', [AdminPaymentController::class, 'failed'])->name('failed');
             Route::post('/bulk-verify', [AdminPaymentController::class, 'bulkVerify'])->name('bulk-verify');
+            Route::post('/bulk-update', [AdminPaymentController::class, 'bulkUpdate'])->name('bulk-update');
+            Route::get('/export', [AdminPaymentController::class, 'export'])->name('export');
+            Route::post('/{payment}/retry', [AdminPaymentController::class, 'retry'])->name('retry');
+            Route::post('/manual-entry', [AdminPaymentController::class, 'manualEntry'])->name('manual-entry');
         });
         
         // Fee Management Routes (requires manage_fees permission)
-        Route::middleware('admin.auth:manage_fees')->prefix('fees')->name('fees.')->group(function () {
+        Route::middleware('admin.auth:manage_fees')->prefix('fee-structures')->name('fee-structures.')->group(function () {
             Route::get('/', [AdminController::class, 'feeStructures'])->name('index');
             Route::get('/create', [AdminController::class, 'createFeeStructure'])->name('create');
             Route::post('/', [AdminController::class, 'storeFeeStructure'])->name('store');
             Route::get('/{feeStructure}/edit', [AdminController::class, 'editFeeStructure'])->name('edit');
             Route::put('/{feeStructure}', [AdminController::class, 'updateFeeStructure'])->name('update');
             Route::delete('/{feeStructure}', [AdminController::class, 'destroyFeeStructure'])->name('destroy');
+            Route::post('/{feeStructure}/toggle-status', [AdminController::class, 'toggleFeeStructureStatus'])->name('toggle-status');
+            Route::post('/{feeStructure}/copy', [AdminController::class, 'copyFeeStructure'])->name('copy');
+            Route::get('/{feeStructure}/breakdown', [AdminController::class, 'getFeeBreakdown'])->name('breakdown');
         });
         
         // Reports Routes (requires view_reports permission)
@@ -150,10 +171,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         // Super Admin Routes (requires super_admin permission)
         Route::middleware('admin.auth:super_admin')->group(function () {
-            Route::get('/settings', [AdminAuthController::class, 'systemSettings'])->name('settings');
-            Route::get('/admin-management', [AdminAuthController::class, 'adminManagement'])->name('admin-management');
-            Route::post('/admin-management', [AdminAuthController::class, 'createAdmin'])->name('admin-management.create');
-            Route::put('/admin-management/{admin}', [AdminAuthController::class, 'updateAdminPermissions'])->name('admin-management.update');
+            Route::get('/settings', [AdminAuthController::class, 'systemSettings'])->name('settings.index');
+            Route::get('/settings/account', [AdminAuthController::class, 'accountSettings'])->name('settings.account');
+            Route::get('/admins', [AdminAuthController::class, 'adminManagement'])->name('admins.index');
+            Route::post('/admins', [AdminAuthController::class, 'createAdmin'])->name('admins.create');
+            Route::put('/admins/{admin}', [AdminAuthController::class, 'updateAdminPermissions'])->name('admins.update');
         });
     });
 });
