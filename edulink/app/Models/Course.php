@@ -149,7 +149,14 @@ class Course extends Model
      */
     public function students(): HasManyThrough
     {
-        return $this->hasManyThrough(Student::class, StudentEnrollment::class);
+        return $this->hasManyThrough(
+            Student::class,
+            StudentEnrollment::class,
+            'course_id',    // Foreign key on student_enrollments table
+            'id',           // Foreign key on students table
+            'id',           // Local key on courses table
+            'student_id'    // Local key on student_enrollments table
+        );
     }
 
     /**
@@ -221,6 +228,26 @@ class Course extends Model
         }
 
         return self::whereIn('id', $this->prerequisites)->get();
+    }
+
+    /**
+     * Get prerequisite courses as a relationship.
+     */
+    public function prerequisites()
+    {
+        if (!$this->prerequisites || empty($this->prerequisites)) {
+            return collect();
+        }
+
+        return self::whereIn('id', $this->prerequisites)->get();
+    }
+
+    /**
+     * Get courses that have this course as a prerequisite.
+     */
+    public function dependentCourses()
+    {
+        return self::whereJsonContains('prerequisites', $this->id)->get();
     }
 
     /**

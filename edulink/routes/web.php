@@ -41,13 +41,16 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::put('/password', [StudentAuthController::class, 'changePassword'])->name('password.change');
         
         // Student portal routes
-        Route::get('/courses', [StudentController::class, 'courses'])->name('courses');
-        Route::get('/enrollments', [StudentController::class, 'enrollments'])->name('enrollments');
-        Route::get('/fees', [StudentController::class, 'fees'])->name('fees');
-        Route::get('/payments', [StudentController::class, 'payments'])->name('payments');
+        Route::get('/courses', [StudentController::class, 'courses'])->name('courses.index');
+        Route::get('/enrollments', [StudentController::class, 'enrollments'])->name('enrollments.index');
+        Route::get('/fees', [StudentController::class, 'fees'])->name('fees.index');
+        Route::get('/payments', [StudentController::class, 'payments'])->name('payments.index');
+        Route::get('/payments/history', [StudentController::class, 'paymentHistory'])->name('payments.history');
         Route::get('/payments/{payment}', [StudentController::class, 'paymentDetails'])->name('payments.show');
-        Route::get('/statements', [StudentController::class, 'statements'])->name('statements');
+        Route::get('/statements', [StudentController::class, 'statements'])->name('statements.index');
         Route::get('/statements/download', [StudentController::class, 'downloadStatement'])->name('statements.download');
+        Route::get('/settings', [StudentController::class, 'settings'])->name('settings');
+        Route::put('/settings', [StudentController::class, 'updateSettings'])->name('settings.update');
         
         // Payment processing routes
         Route::post('/payments/initiate', [StudentPaymentController::class, 'initiate'])->name('payments.initiate');
@@ -57,8 +60,13 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('/payments/cancel', [StudentPaymentController::class, 'paymentCancel'])->name('payments.cancel');
         
         // Notifications
-        Route::get('/notifications', [StudentController::class, 'notifications'])->name('notifications');
+        Route::get('/notifications', [StudentController::class, 'notifications'])->name('notifications.index');
         Route::post('/notifications/{notification}/read', [StudentController::class, 'markNotificationRead'])->name('notifications.read');
+        
+        // Import/Export Routes
+        Route::post('/import', [StudentController::class, 'import'])->name('import');
+        Route::get('/export', [StudentController::class, 'export'])->name('export');
+        Route::get('/template', [StudentController::class, 'downloadTemplate'])->name('template');
     });
 });
 

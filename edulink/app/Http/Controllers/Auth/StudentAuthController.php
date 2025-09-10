@@ -20,7 +20,7 @@ class StudentAuthController extends Controller
      */
     public function create(): View
     {
-        $courses = Course::where('is_active', true)->get();
+        $courses = Course::where('status', 'active')->get();
         return view('auth.student.register', compact('courses'));
     }
 
@@ -32,20 +32,16 @@ class StudentAuthController extends Controller
         $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.Student::class],
-            'phone' => ['required', 'string', 'max:20', 'unique:'.Student::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'date_of_birth' => ['required', 'date', 'before:today'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:students'],
+            'phone' => ['required', 'string', 'max:20'],
+            'password' => ['required', 'confirmed', 'min:8'],
+            'date_of_birth' => ['required', 'date'],
             'gender' => ['required', 'in:male,female,other'],
-            'nationality' => ['required', 'string', 'max:100'],
-            'id_number' => ['required', 'string', 'max:50', 'unique:'.Student::class],
-            'course_id' => ['required', 'exists:courses,id'],
-            'emergency_contact_name' => ['required', 'string', 'max:255'],
-            'emergency_contact_phone' => ['required', 'string', 'max:20'],
+            'national_id' => ['required', 'string', 'max:50'],
         ]);
 
         $student = Student::create([
-            'student_id' => Student::generateStudentId(),
+            'student_id' => 'STU' . date('Y') . str_pad(Student::count() + 1, 4, '0', STR_PAD_LEFT),
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
@@ -53,20 +49,14 @@ class StudentAuthController extends Controller
             'password' => Hash::make($request->password),
             'date_of_birth' => $request->date_of_birth,
             'gender' => $request->gender,
-            'nationality' => $request->nationality,
-            'id_number' => $request->id_number,
-            'course_id' => $request->course_id,
-            'emergency_contact_name' => $request->emergency_contact_name,
-            'emergency_contact_phone' => $request->emergency_contact_phone,
-            'status' => 'pending_verification',
-            'email_verified_at' => null,
+            'national_id' => $request->national_id,
+            'enrollment_date' => now()->toDateString(),
+            'status' => 'active',
         ]);
-
-        event(new Registered($student));
 
         Auth::guard('student')->login($student);
 
-        return redirect()->route('student.dashboard');
+        return redirect()->route('student.dashboard')->with('success', 'Registration successful!');
     }
 
     /**

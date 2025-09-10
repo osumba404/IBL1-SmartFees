@@ -27,7 +27,7 @@ class CourseController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('course_code', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
             });
         }
@@ -69,7 +69,7 @@ class CourseController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:courses',
-            'code' => 'required|string|max:20|unique:courses',
+            'code' => 'required|string|max:20|unique:courses,course_code',
             'description' => 'nullable|string|max:1000',
             'department' => 'required|string|max:255',
             'level' => 'required|in:certificate,diploma,degree,masters,phd',
@@ -78,22 +78,22 @@ class CourseController extends Controller
             'prerequisites' => 'nullable|array',
             'prerequisites.*' => 'exists:courses,id',
             'enrollment_capacity' => 'nullable|integer|min:1',
-            'tuition_fee' => 'required|numeric|min:0',
+            'total_fee' => 'required|numeric|min:0',
             'enrollment_open' => 'required|in:yes,no',
             'status' => 'required|in:active,inactive,discontinued',
         ]);
 
         $course = Course::create([
             'name' => $request->name,
-            'code' => strtoupper($request->code),
+            'course_code' => strtoupper($request->code),
             'description' => $request->description,
             'department' => $request->department,
             'level' => $request->level,
             'duration_months' => $request->duration_months,
             'credit_hours' => $request->credit_hours,
             'prerequisites' => $request->prerequisites ?? [],
-            'enrollment_capacity' => $request->enrollment_capacity,
-            'tuition_fee' => $request->tuition_fee,
+            'max_students' => $request->enrollment_capacity,
+            'total_fee' => $request->total_fee,
             'enrollment_open' => $request->enrollment_open === 'yes',
             'status' => $request->status,
         ]);
@@ -109,15 +109,13 @@ class CourseController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        $course->load(['prerequisites', 'dependentCourses']);
-        
         // Get course statistics
         $stats = [
             'total_students' => $course->students()->count(),
             'active_enrollments' => $course->enrollments()->where('status', 'active')->count(),
             'completed_enrollments' => $course->enrollments()->where('status', 'completed')->count(),
             'total_revenue' => $course->enrollments()
-                ->join('payments', 'student_enrollments.id', '=', 'payments.enrollment_id')
+                ->join('payments', 'student_enrollments.id', '=', 'payments.student_enrollment_id')
                 ->where('payments.status', 'completed')
                 ->sum('payments.amount'),
         ];
@@ -161,7 +159,7 @@ class CourseController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:courses,name,' . $course->id,
-            'code' => 'required|string|max:20|unique:courses,code,' . $course->id,
+            'code' => 'required|string|max:20|unique:courses,course_code,' . $course->id,
             'description' => 'nullable|string|max:1000',
             'department' => 'required|string|max:255',
             'level' => 'required|in:certificate,diploma,degree,masters,phd',
@@ -170,7 +168,7 @@ class CourseController extends Controller
             'prerequisites' => 'nullable|array',
             'prerequisites.*' => 'exists:courses,id',
             'enrollment_capacity' => 'nullable|integer|min:1',
-            'tuition_fee' => 'required|numeric|min:0',
+            'total_fee' => 'required|numeric|min:0',
             'enrollment_open' => 'required|in:yes,no',
             'status' => 'required|in:active,inactive,discontinued',
         ]);
@@ -188,15 +186,15 @@ class CourseController extends Controller
 
         $course->update([
             'name' => $request->name,
-            'code' => strtoupper($request->code),
+            'course_code' => strtoupper($request->code),
             'description' => $request->description,
             'department' => $request->department,
             'level' => $request->level,
             'duration_months' => $request->duration_months,
             'credit_hours' => $request->credit_hours,
             'prerequisites' => $request->prerequisites ?? [],
-            'enrollment_capacity' => $request->enrollment_capacity,
-            'tuition_fee' => $request->tuition_fee,
+            'max_students' => $request->enrollment_capacity,
+            'total_fee' => $request->total_fee,
             'enrollment_open' => $request->enrollment_open === 'yes',
             'status' => $request->status,
         ]);
@@ -283,12 +281,12 @@ class CourseController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:courses',
-            'code' => 'required|string|max:20|unique:courses',
+            'code' => 'required|string|max:20|unique:courses,course_code',
         ]);
 
         $newCourse = $course->replicate();
         $newCourse->name = $request->name;
-        $newCourse->code = strtoupper($request->code);
+        $newCourse->course_code = strtoupper($request->code);
         $newCourse->status = 'inactive'; // Start as inactive
         $newCourse->enrollment_open = false;
         $newCourse->save();
@@ -372,20 +370,20 @@ class CourseController extends Controller
             // CSV headers
             fputcsv($file, [
                 'Course Code', 'Course Name', 'Department', 'Level', 
-                'Duration (Months)', 'Credit Hours', 'Tuition Fee', 
+                'Duration (Months)', 'Credit Hours', 'Total Fee', 
                 'Total Students', 'Active Enrollments', 'Status', 'Enrollment Open'
             ]);
 
             // CSV data
             foreach ($courses as $course) {
                 fputcsv($file, [
-                    $course->code,
+                    $course->course_code,
                     $course->name,
                     $course->department,
                     $course->level,
                     $course->duration_months,
                     $course->credit_hours ?? 'N/A',
-                    $course->tuition_fee,
+                    $course->total_fee,
                     $course->students_count,
                     $course->enrollments_count,
                     $course->status,
@@ -436,11 +434,11 @@ class CourseController extends Controller
             'completed_enrollments' => $course->enrollments()->where('status', 'completed')->count(),
             'pending_enrollments' => $course->enrollments()->where('status', 'pending')->count(),
             'total_revenue' => $course->enrollments()
-                ->join('payments', 'student_enrollments.id', '=', 'payments.enrollment_id')
+                ->join('payments', 'student_enrollments.id', '=', 'payments.student_enrollment_id')
                 ->where('payments.status', 'completed')
                 ->sum('payments.amount'),
             'average_payment' => $course->enrollments()
-                ->join('payments', 'student_enrollments.id', '=', 'payments.enrollment_id')
+                ->join('payments', 'student_enrollments.id', '=', 'payments.student_enrollment_id')
                 ->where('payments.status', 'completed')
                 ->avg('payments.amount'),
         ];

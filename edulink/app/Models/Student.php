@@ -185,4 +185,34 @@ class Student extends Authenticatable
             'last_payment_date' => $this->completedPayments()->latest('payment_date')->first()?->payment_date,
         ]);
     }
+
+    /**
+     * Get financial summary for the student.
+     */
+    public function getFinancialSummary(): array
+    {
+        $totalOwed = $this->total_fees_owed ?? 0;
+        $totalPaid = $this->total_fees_paid ?? 0;
+        $outstandingBalance = $totalOwed - $totalPaid;
+        
+        $recentPayments = $this->completedPayments()
+            ->latest('payment_date')
+            ->limit(5)
+            ->get();
+            
+        $pendingPayments = $this->payments()
+            ->where('status', 'pending')
+            ->sum('amount');
+            
+        return [
+            'total_fees_owed' => $totalOwed,
+            'total_fees_paid' => $totalPaid,
+            'outstanding_balance' => $outstandingBalance,
+            'pending_payments' => $pendingPayments,
+            'payment_status' => $outstandingBalance > 0 ? 'outstanding' : 'up_to_date',
+            'last_payment_date' => $this->last_payment_date,
+            'recent_payments' => $recentPayments,
+            'has_overdue_payments' => $this->hasOverduePayments(),
+        ];
+    }
 }

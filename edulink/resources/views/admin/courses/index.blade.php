@@ -30,21 +30,30 @@
                         @forelse($courses as $course)
                             <tr>
                                 <td>{{ $course->id }}</td>
-                                <td>{{ $course->name }}</td>
-                                <td>{{ $course->code }}</td>
-                                <td>{{ $course->duration }} months</td>
-                                <td>{{ number_format($course->fee, 2) }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $course->is_active ? 'success' : 'secondary' }}">
-                                        {{ $course->is_active ? 'Active' : 'Inactive' }}
+                                    <div>
+                                        <strong>{{ $course->name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ $course->department ?? 'No Department' }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ $course->course_code }}</td>
+                                <td>{{ $course->duration_months }} months</td>
+                                <td>KSh {{ number_format($course->total_fee, 2) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ $course->status === 'active' ? 'success' : ($course->status === 'inactive' ? 'warning' : 'danger') }}">
+                                        {{ ucfirst($course->status) }}
                                     </span>
                                 </td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ route('admin.courses.edit', $course) }}" class="btn btn-sm btn-primary">
+                                        <a href="{{ route('admin.courses.show', $course) }}" class="btn btn-sm btn-info" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ route('admin.courses.edit', $course) }}" class="btn btn-sm btn-primary" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-danger" 
+                                        <button type="button" class="btn btn-sm btn-danger" title="Delete"
                                                 onclick="confirmDelete('{{ route('admin.courses.destroy', $course) }}')">
                                             <i class="fas fa-trash"></i>
                                         </button>

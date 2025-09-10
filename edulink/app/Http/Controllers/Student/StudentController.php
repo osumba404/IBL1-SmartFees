@@ -24,10 +24,6 @@ class StudentController extends Controller
         
         // Get all available courses
         $availableCourses = Course::where('status', 'active')
-            ->where('enrollment_open', true)
-            ->with(['feeStructures' => function($query) {
-                $query->where('status', 'active')->latest();
-            }])
             ->get();
 
         // Get student's enrolled courses
@@ -290,6 +286,29 @@ class StudentController extends Controller
         $payments = $query->latest()->paginate(15)->withQueryString();
 
         return view('student.payments', compact('payments', 'student'));
+    }
+
+    /**
+     * Display student payment history
+     */
+    public function paymentHistory(): View
+    {
+        $student = Auth::guard('student')->user();
+        
+        $payments = $student->payments()
+            ->with(['enrollment.course', 'enrollment.semester'])
+            ->latest()
+            ->paginate(20);
+
+        // Payment statistics
+        $paymentStats = [
+            'total_payments' => $student->payments()->where('status', 'completed')->sum('amount'),
+            'pending_payments' => $student->payments()->where('status', 'pending')->sum('amount'),
+            'failed_payments' => $student->payments()->where('status', 'failed')->count(),
+            'last_payment' => $student->payments()->where('status', 'completed')->latest()->first(),
+        ];
+
+        return view('student.payment-history', compact('payments', 'paymentStats', 'student'));
     }
 
     /**
