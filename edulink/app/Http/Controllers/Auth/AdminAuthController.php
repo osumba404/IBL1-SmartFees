@@ -136,7 +136,7 @@ class AdminAuthController extends Controller
             ->take(10)
             ->get();
 
-        $recentStudents = Student::with('course')
+        $recentStudents = Student::with('activeEnrollments.course')
             ->latest()
             ->take(5)
             ->get();
@@ -145,7 +145,7 @@ class AdminAuthController extends Controller
         $pendingApprovals = [];
         if ($admin->can_approve_students) {
             $pendingApprovals = Student::where('status', 'pending_verification')
-                ->with('course')
+                ->with('activeEnrollments.course')
                 ->latest()
                 ->take(5)
                 ->get();

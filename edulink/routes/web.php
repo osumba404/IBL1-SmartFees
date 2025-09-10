@@ -43,6 +43,7 @@ Route::prefix('student')->name('student.')->group(function () {
         // Student portal routes
         Route::get('/courses', [StudentController::class, 'courses'])->name('courses.index');
         Route::get('/enrollments', [StudentController::class, 'enrollments'])->name('enrollments.index');
+        Route::post('/enrollments', [StudentController::class, 'storeEnrollment'])->name('enrollments.store');
         Route::get('/fees', [StudentController::class, 'fees'])->name('fees.index');
         Route::get('/payments', [StudentController::class, 'payments'])->name('payments.index');
         Route::get('/payments/history', [StudentController::class, 'paymentHistory'])->name('payments.history');
@@ -111,6 +112,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{student}/enrollments', [StudentManagementController::class, 'enrollments'])->name('enrollments');
             Route::post('/bulk-update', [StudentManagementController::class, 'bulkUpdate'])->name('bulk-update');
             Route::get('/export', [StudentManagementController::class, 'export'])->name('export');
+            Route::post('/import', [StudentManagementController::class, 'import'])->name('import');
         });
         
         // Course Management Routes (requires manage_courses permission)

@@ -27,7 +27,7 @@ class SemesterController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('semester_code', 'like', "%{$search}%")
                   ->orWhere('academic_year', 'like', "%{$search}%");
             });
         }
@@ -69,7 +69,7 @@ class SemesterController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:20|unique:semesters',
+            'semester_code' => 'required|string|max:20|unique:semesters,semester_code',
             'academic_year' => 'required|string|max:20',
             'semester_type' => 'required|in:fall,spring,summer,winter',
             'start_date' => 'required|date',
@@ -91,21 +91,29 @@ class SemesterController extends Controller
             ]);
         }
 
+        // Map semester_type to period enum
+        $periodMap = [
+            'fall' => 'semester_1',
+            'spring' => 'semester_2', 
+            'summer' => 'summer',
+            'winter' => 'winter'
+        ];
+
         $semester = Semester::create([
             'name' => $request->name,
-            'code' => strtoupper($request->code),
-            'academic_year' => $request->academic_year,
-            'semester_type' => $request->semester_type,
+            'semester_code' => strtoupper($request->semester_code),
+            'academic_year' => (int) explode('-', $request->academic_year)[0], // Extract first year
+            'period' => $periodMap[$request->semester_type],
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'registration_start' => $request->registration_start,
-            'registration_end' => $request->registration_end,
-            'fee_due_date' => $request->fee_due_date,
-            'late_fee_start_date' => $request->late_fee_start_date,
-            'grace_period_days' => $request->grace_period_days ?? 0,
-            'max_credits' => $request->max_credits,
-            'min_credits' => $request->min_credits,
-            'status' => $request->status,
+            'registration_start_date' => $request->registration_start,
+            'registration_end_date' => $request->registration_end,
+            'fee_payment_deadline' => $request->fee_due_date,
+            'late_payment_deadline' => $request->late_fee_start_date,
+            'grace_period_days' => $request->grace_period_days ?? 7,
+            'max_credits_per_student' => $request->max_credits,
+            'min_credits_per_student' => $request->min_credits,
+            'status' => $request->status === 'active' ? 'active' : 'upcoming',
         ]);
 
         return redirect()->route('admin.semesters.show', $semester)
@@ -127,7 +135,7 @@ class SemesterController extends Controller
             'pending_enrollments' => $semester->enrollments()->where('status', 'pending')->count(),
             'total_students' => $semester->enrollments()->distinct('student_id')->count(),
             'total_revenue' => $semester->enrollments()
-                ->join('payments', 'student_enrollments.id', '=', 'payments.enrollment_id')
+                ->join('payments', 'student_enrollments.id', '=', 'payments.student_enrollment_id')
                 ->where('payments.status', 'completed')
                 ->sum('payments.amount'),
         ];
@@ -177,7 +185,7 @@ class SemesterController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:20|unique:semesters,code,' . $semester->id,
+            'semester_code' => 'required|string|max:20|unique:semesters,semester_code,' . $semester->id,
             'academic_year' => 'required|string|max:20',
             'semester_type' => 'required|in:fall,spring,summer,winter',
             'start_date' => 'required|date',
@@ -199,21 +207,29 @@ class SemesterController extends Controller
             ]);
         }
 
+        // Map semester_type to period enum
+        $periodMap = [
+            'fall' => 'semester_1',
+            'spring' => 'semester_2', 
+            'summer' => 'summer',
+            'winter' => 'winter'
+        ];
+
         $semester->update([
             'name' => $request->name,
-            'code' => strtoupper($request->code),
-            'academic_year' => $request->academic_year,
-            'semester_type' => $request->semester_type,
+            'semester_code' => strtoupper($request->semester_code),
+            'academic_year' => (int) explode('-', $request->academic_year)[0], // Extract first year
+            'period' => $periodMap[$request->semester_type],
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'registration_start' => $request->registration_start,
-            'registration_end' => $request->registration_end,
-            'fee_due_date' => $request->fee_due_date,
-            'late_fee_start_date' => $request->late_fee_start_date,
-            'grace_period_days' => $request->grace_period_days ?? 0,
-            'max_credits' => $request->max_credits,
-            'min_credits' => $request->min_credits,
-            'status' => $request->status,
+            'registration_start_date' => $request->registration_start,
+            'registration_end_date' => $request->registration_end,
+            'fee_payment_deadline' => $request->fee_due_date,
+            'late_payment_deadline' => $request->late_fee_start_date,
+            'grace_period_days' => $request->grace_period_days ?? 7,
+            'max_credits_per_student' => $request->max_credits,
+            'min_credits_per_student' => $request->min_credits,
+            'status' => $request->status === 'active' ? 'active' : 'upcoming',
         ]);
 
         return redirect()->route('admin.semesters.show', $semester)
@@ -297,7 +313,7 @@ class SemesterController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:20|unique:semesters',
+            'semester_code' => 'required|string|max:20|unique:semesters,semester_code',
             'academic_year' => 'required|string|max:20',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
@@ -305,24 +321,24 @@ class SemesterController extends Controller
 
         $newSemester = $semester->replicate();
         $newSemester->name = $request->name;
-        $newSemester->code = strtoupper($request->code);
+        $newSemester->semester_code = strtoupper($request->semester_code);
         $newSemester->academic_year = $request->academic_year;
         $newSemester->start_date = $request->start_date;
         $newSemester->end_date = $request->end_date;
         
         // Calculate other dates based on the new start date
         $daysDiff = $semester->registration_start->diffInDays($semester->start_date, false);
-        $newSemester->registration_start = $newSemester->start_date->copy()->addDays($daysDiff);
+        $newSemester->registration_start_date = $newSemester->start_date->copy()->addDays($daysDiff);
         
         $daysDiff = $semester->registration_end->diffInDays($semester->start_date, false);
-        $newSemester->registration_end = $newSemester->start_date->copy()->addDays($daysDiff);
+        $newSemester->registration_end_date = $newSemester->start_date->copy()->addDays($daysDiff);
         
         $daysDiff = $semester->fee_due_date->diffInDays($semester->start_date, false);
-        $newSemester->fee_due_date = $newSemester->start_date->copy()->addDays($daysDiff);
+        $newSemester->fee_payment_deadline = $newSemester->start_date->copy()->addDays($daysDiff);
         
         if ($semester->late_fee_start_date) {
             $daysDiff = $semester->late_fee_start_date->diffInDays($semester->start_date, false);
-            $newSemester->late_fee_start_date = $newSemester->start_date->copy()->addDays($daysDiff);
+            $newSemester->late_payment_deadline = $newSemester->start_date->copy()->addDays($daysDiff);
         }
         
         $newSemester->status = 'inactive'; // Start as inactive
@@ -404,15 +420,15 @@ class SemesterController extends Controller
             // CSV data
             foreach ($semesters as $semester) {
                 fputcsv($file, [
-                    $semester->code,
+                    $semester->semester_code,
                     $semester->name,
                     $semester->academic_year,
                     $semester->semester_type,
                     $semester->start_date->format('Y-m-d'),
                     $semester->end_date->format('Y-m-d'),
-                    $semester->registration_start->format('Y-m-d'),
-                    $semester->registration_end->format('Y-m-d'),
-                    $semester->fee_due_date->format('Y-m-d'),
+                    $semester->registration_start_date->format('Y-m-d'),
+                    $semester->registration_end_date->format('Y-m-d'),
+                    $semester->fee_payment_deadline->format('Y-m-d'),
                     $semester->enrollments_count,
                     $semester->fee_structures_count,
                     $semester->status,
@@ -437,11 +453,11 @@ class SemesterController extends Controller
             'pending_enrollments' => $semester->enrollments()->where('status', 'pending')->count(),
             'total_students' => $semester->enrollments()->distinct('student_id')->count(),
             'total_revenue' => $semester->enrollments()
-                ->join('payments', 'student_enrollments.id', '=', 'payments.enrollment_id')
+                ->join('payments', 'student_enrollments.id', '=', 'payments.student_enrollment_id')
                 ->where('payments.status', 'completed')
                 ->sum('payments.amount'),
             'average_payment' => $semester->enrollments()
-                ->join('payments', 'student_enrollments.id', '=', 'payments.enrollment_id')
+                ->join('payments', 'student_enrollments.id', '=', 'payments.student_enrollment_id')
                 ->where('payments.status', 'completed')
                 ->avg('payments.amount'),
             'enrollment_by_course' => $semester->enrollments()
@@ -461,12 +477,12 @@ class SemesterController extends Controller
     {
         $now = now();
         $isOpen = $semester->status === 'active' && 
-                  $now->between($semester->registration_start, $semester->registration_end);
+                  $now->between($semester->registration_start_date, $semester->registration_end_date);
 
         return response()->json([
             'is_open' => $isOpen,
-            'registration_start' => $semester->registration_start->toISOString(),
-            'registration_end' => $semester->registration_end->toISOString(),
+            'registration_start' => $semester->registration_start_date->toISOString(),
+            'registration_end' => $semester->registration_end_date->toISOString(),
             'current_time' => $now->toISOString(),
         ]);
     }

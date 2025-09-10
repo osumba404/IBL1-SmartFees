@@ -73,7 +73,16 @@
                                     </div>
                                 </td>
                                 <td>{{ $student->email }}</td>
-                                <td>{{ $student->course->name ?? 'N/A' }}</td>
+                                <td>
+                                    @if($student->activeEnrollments->count() > 0)
+                                        {{ $student->activeEnrollments->first()->course->name }}
+                                        @if($student->activeEnrollments->count() > 1)
+                                            <small class="text-muted">(+{{ $student->activeEnrollments->count() - 1 }} more)</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">No active enrollments</span>
+                                    @endif
+                                </td>
                                 <td>{{ $student->phone ?? 'N/A' }}</td>
                                 <td>
                                     @if($student->is_active)

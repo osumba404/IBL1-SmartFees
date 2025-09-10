@@ -325,4 +325,78 @@ class StudentController extends Controller
 
         return $enabledMethods;
     }
+
+    /**
+     * Store enrollment request
+     */
+    public function storeEnrollment(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'semester_id' => 'nullable|exists:semesters,id',
+            'enrollment_type' => 'required|in:new,continuing,transfer,readmission',
+            'payment_plan' => 'required|in:full_payment,installments',
+        ]);
+
+        $student = Auth::guard('student')->user();
+        $course = Course::findOrFail($request->course_id);
+
+        // Check if student is already enrolled in this course
+        $existingEnrollment = StudentEnrollment::where('student_id', $student->id)
+            ->where('course_id', $course->id)
+            ->first();
+
+        if ($existingEnrollment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are already enrolled in this course.'
+            ]);
+        }
+
+        // Check if course has available capacity
+        $currentEnrollments = StudentEnrollment::where('course_id', $course->id)
+            ->where('status', '!=', 'withdrawn')
+            ->count();
+
+        if ($course->enrollment_capacity && $currentEnrollments >= $course->enrollment_capacity) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This course has reached its enrollment capacity.'
+            ]);
+        }
+
+        // Create enrollment record
+        $enrollment = StudentEnrollment::create([
+            'enrollment_number' => StudentEnrollment::generateEnrollmentNumber(),
+            'student_id' => $student->id,
+            'course_id' => $course->id,
+            'semester_id' => $request->semester_id,
+            'enrollment_date' => now(),
+            'enrollment_type' => $request->enrollment_type,
+            'status' => 'enrolled',
+            'payment_plan' => $request->payment_plan,
+            'total_fees_due' => $course->total_fee,
+            'fees_paid' => 0,
+            'outstanding_balance' => $course->total_fee,
+            'fees_fully_paid' => false,
+            'installment_count' => $request->payment_plan === 'installments' ? 4 : null,
+            'installment_amount' => $request->payment_plan === 'installments' ? ($course->total_fee / 4) : null,
+            'next_payment_due' => now()->addDays(30), // First payment due in 30 days
+        ]);
+
+        // Create notification for student
+        PaymentNotification::create([
+            'student_id' => $student->id,
+            'title' => 'Enrollment Successful',
+            'message' => "You have been successfully enrolled in {$course->name}. Please proceed with fee payment.",
+            'type' => 'enrollment',
+            'is_read' => false,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Enrollment successful! Please proceed with fee payment.',
+            'enrollment_number' => $enrollment->enrollment_number
+        ]);
+    }
 }

@@ -24,7 +24,7 @@ class StudentManagementController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        $query = Student::with(['course', 'enrollments']);
+        $query = Student::with(['activeEnrollments.course', 'enrollments']);
         
         // Apply filters
         if ($request->filled('search')) {
@@ -43,7 +43,9 @@ class StudentManagementController extends Controller
         }
         
         if ($request->filled('course_id')) {
-            $query->where('course_id', $request->course_id);
+            $query->whereHas('enrollments', function($q) use ($request) {
+                $q->where('course_id', $request->course_id);
+            });
         }
         
         if ($request->filled('date_from')) {
@@ -400,11 +402,11 @@ class StudentManagementController extends Controller
     }
 
     /**
-     * Export students to Excel
+     * Export students to CSV
      */
     public function export(Request $request)
     {
-        $query = Student::with(['course', 'enrollments']);
+        $query = Student::with(['activeEnrollments.course', 'enrollments']);
         
         // Apply same filters as index
         if ($request->filled('status')) {
@@ -412,41 +414,65 @@ class StudentManagementController extends Controller
         }
         
         if ($request->filled('course_id')) {
-            $query->where('course_id', $request->course_id);
+            $query->whereHas('enrollments', function($q) use ($request) {
+                $q->where('course_id', $request->course_id);
+            });
         }
 
         $students = $query->get();
 
-        // This would typically use Laravel Excel package
-        // For now, return a simple CSV response
-        $filename = 'students-' . now()->format('Y-m-d-H-i-s') . '.csv';
-        
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Disposition' => 'attachment; filename="students_export_' . date('Y-m-d_H-i-s') . '.csv"',
         ];
 
         $callback = function() use ($students) {
             $file = fopen('php://output', 'w');
             
-            // CSV headers
+            // CSV Headers
             fputcsv($file, [
-                'Student ID', 'First Name', 'Last Name', 'Email', 'Phone',
-                'Course', 'Status', 'Registration Date', 'Last Login'
+                'Admission No',
+                'Full Name', 
+                'First Name',
+                'Last Name',
+                'Email',
+                'Phone',
+                'Gender',
+                'Date of Birth',
+                'National ID',
+                'Status',
+                'Enrollment Date',
+                'Current Courses',
+                'Total Fees Owed',
+                'Total Fees Paid',
+                'Outstanding Balance'
             ]);
 
-            // CSV data
             foreach ($students as $student) {
+                // Get current courses
+                $currentCourses = $student->activeEnrollments->pluck('course.name')->join(', ');
+                
+                // Calculate financial summary
+                $totalOwed = $student->total_fees_owed ?? 0;
+                $totalPaid = $student->total_fees_paid ?? 0;
+                $outstanding = $totalOwed - $totalPaid;
+                
                 fputcsv($file, [
-                    $student->student_id,
+                    $student->student_id, // Admission No
+                    $student->first_name . ' ' . $student->last_name, // Full Name
                     $student->first_name,
                     $student->last_name,
                     $student->email,
-                    $student->phone,
-                    $student->course->name ?? 'N/A',
-                    $student->status,
-                    $student->created_at->format('Y-m-d'),
-                    $student->last_login_at?->format('Y-m-d H:i:s') ?? 'Never',
+                    $student->phone ?? '',
+                    $student->gender ?? '',
+                    $student->date_of_birth?->format('Y-m-d') ?? '',
+                    $student->national_id ?? '',
+                    ucfirst($student->status),
+                    $student->enrollment_date?->format('Y-m-d') ?? '',
+                    $currentCourses ?: 'No active enrollments',
+                    number_format($totalOwed, 2),
+                    number_format($totalPaid, 2),
+                    number_format($outstanding, 2)
                 ]);
             }
 
@@ -454,5 +480,79 @@ class StudentManagementController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Import students from CSV
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $path = $file->getRealPath();
+            $data = array_map('str_getcsv', file($path));
+            $header = array_shift($data);
+
+            $imported = 0;
+            $errors = [];
+
+            foreach ($data as $row) {
+                if (count($row) !== count($header)) {
+                    continue; // Skip malformed rows
+                }
+
+                $studentData = array_combine($header, $row);
+                
+                try {
+                    // Validate required fields
+                    if (empty($studentData['first_name']) || empty($studentData['last_name']) || empty($studentData['email'])) {
+                        $errors[] = "Row skipped: Missing required fields (first_name, last_name, email)";
+                        continue;
+                    }
+
+                    // Check if student already exists
+                    if (Student::where('email', $studentData['email'])->exists()) {
+                        $errors[] = "Row skipped: Student with email {$studentData['email']} already exists";
+                        continue;
+                    }
+
+                    // Create student
+                    Student::create([
+                        'student_id' => Student::generateStudentId(),
+                        'first_name' => $studentData['first_name'],
+                        'last_name' => $studentData['last_name'],
+                        'email' => $studentData['email'],
+                        'phone' => $studentData['phone'] ?? null,
+                        'password' => Hash::make($studentData['password'] ?? 'password123'),
+                        'date_of_birth' => $studentData['date_of_birth'] ?? null,
+                        'gender' => $studentData['gender'] ?? 'other',
+                        'national_id' => $studentData['national_id'] ?? null,
+                        'enrollment_date' => now()->toDateString(),
+                        'status' => 'active',
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row skipped: Error processing student {$studentData['email']} - " . $e->getMessage();
+                }
+            }
+
+            $message = "Successfully imported {$imported} students.";
+            if (!empty($errors)) {
+                $message .= " " . count($errors) . " rows had errors.";
+            }
+
+            return redirect()->route('admin.students.index')
+                ->with('success', $message)
+                ->with('import_errors', $errors);
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.students.index')
+                ->with('error', 'Import failed: ' . $e->getMessage());
+        }
     }
 }
