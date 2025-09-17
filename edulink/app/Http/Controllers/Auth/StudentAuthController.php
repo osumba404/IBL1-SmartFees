@@ -73,39 +73,69 @@ class StudentAuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $request->validate([
-            'email' => ['required', 'string', 'email'],
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        if (Auth::guard('student')->attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+        // Determine if login is email or student ID
+        $isEmail = filter_var($request->login, FILTER_VALIDATE_EMAIL);
+        
+        // Try authentication with the appropriate field
+        $credentials = [
+            'password' => $request->password
+        ];
+        
+        if ($isEmail) {
+            $credentials['email'] = $request->login;
+        } else {
+            $credentials['student_id'] = $request->login;
+        }
+        
+        // Add status check to credentials to ensure only active students can login
+        $credentials['status'] = 'active';
+        
+        if (Auth::guard('student')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $student = Auth::guard('student')->user();
             
-            // Check if student account is active
-            if ($student->status === 'suspended') {
-                Auth::guard('student')->logout();
-                return back()->withErrors([
-                    'email' => 'Your account has been suspended. Please contact administration.',
-                ]);
-            }
-
-            if ($student->status === 'inactive') {
-                Auth::guard('student')->logout();
-                return back()->withErrors([
-                    'email' => 'Your account is inactive. Please contact administration.',
-                ]);
-            }
-
             // Update last login
             $student->update(['last_login_at' => now()]);
 
             return redirect()->intended(route('student.dashboard'));
         }
 
+        // Check if student exists but has wrong status
+        $student = null;
+        if ($isEmail) {
+            $student = \App\Models\Student::where('email', $request->login)->first();
+        } else {
+            $student = \App\Models\Student::where('student_id', $request->login)->first();
+        }
+        
+        if ($student) {
+            if ($student->status === 'suspended') {
+                return back()->withErrors([
+                    'login' => 'Your account has been suspended. Please contact administration.',
+                ])->onlyInput('login');
+            }
+            
+            if ($student->status === 'inactive') {
+                return back()->withErrors([
+                    'login' => 'Your account is inactive. Please contact administration.',
+                ])->onlyInput('login');
+            }
+            
+            // Student exists but password is wrong
+            return back()->withErrors([
+                'login' => 'The provided credentials do not match our records.',
+            ])->onlyInput('login');
+        }
+
+        // Student doesn't exist
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+            'login' => 'No account found with these credentials.',
+        ])->onlyInput('login');
     }
 
     /**

@@ -13,8 +13,13 @@ use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('student.login');
+    return redirect()->route('admin.login');
 });
+
+// Generic login route fallback
+Route::get('/login', function () {
+    return redirect()->route('admin.login');
+})->name('login');
 
 // Student Authentication Routes
 Route::prefix('student')->name('student.')->group(function () {
@@ -33,7 +38,7 @@ Route::prefix('student')->name('student.')->group(function () {
     });
 
     // Authenticated student routes
-    Route::middleware('auth:student')->group(function () {
+    Route::middleware(['auth:student', 'student.active'])->group(function () {
         Route::post('/logout', [StudentAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [StudentAuthController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [StudentAuthController::class, 'profile'])->name('profile');
@@ -43,6 +48,7 @@ Route::prefix('student')->name('student.')->group(function () {
         // Student portal routes
         Route::get('/courses', [StudentController::class, 'courses'])->name('courses.index');
         Route::get('/enrollments', [StudentController::class, 'enrollments'])->name('enrollments.index');
+        Route::get('/enroll', [StudentController::class, 'enroll'])->name('enroll');
         Route::post('/enrollments', [StudentController::class, 'storeEnrollment'])->name('enrollments.store');
         Route::get('/fees', [StudentController::class, 'fees'])->name('fees.index');
         Route::get('/payments', [StudentController::class, 'payments'])->name('payments.index');
@@ -154,6 +160,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Payment Management Routes (requires manage_payments permission)
         Route::middleware('admin.auth:manage_payments')->prefix('payments')->name('payments.')->group(function () {
             Route::get('/', [AdminPaymentController::class, 'index'])->name('index');
+            Route::get('/create', [AdminPaymentController::class, 'create'])->name('create');
+            Route::post('/', [AdminPaymentController::class, 'store'])->name('store');
             Route::get('/{payment}', [AdminPaymentController::class, 'show'])->name('show');
             Route::post('/{payment}/verify', [AdminPaymentController::class, 'verify'])->name('verify');
             Route::post('/{payment}/refund', [AdminPaymentController::class, 'refund'])->name('refund');
@@ -201,6 +209,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         });
     });
 });
+
+// Fallback login route for Laravel's default auth redirects
+Route::get('/login', function () {
+    // Check if request is from admin area
+    if (request()->is('admin/*') || str_contains(request()->headers->get('referer', ''), '/admin')) {
+        return redirect()->route('admin.login');
+    }
+    // Default to student login
+    return redirect()->route('student.login');
+})->name('login');
 
 // Public webhook routes (no authentication required)
 Route::post('/webhooks/mpesa', [StudentPaymentController::class, 'mpesaCallback'])->name('webhooks.mpesa');

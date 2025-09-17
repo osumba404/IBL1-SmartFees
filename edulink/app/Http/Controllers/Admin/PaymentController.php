@@ -492,4 +492,110 @@ class PaymentController extends Controller
             return back()->withErrors(['manual' => 'Manual payment entry failed. Please try again.']);
         }
     }
+
+    /**
+     * Show the form for creating a new payment
+     */
+    public function create(): View
+    {
+        $admin = Auth::guard('admin')->user();
+        
+        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+            abort(403, 'Insufficient permissions to create payments.');
+        }
+
+        $students = Student::active()
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+            
+        $courses = Course::where('is_active', true)->get();
+        $semesters = Semester::where('is_active', true)
+            ->where('end_date', '>=', now())
+            ->orderBy('start_date', 'desc')
+            ->get();
+            
+        $paymentMethods = [
+            'mpesa' => 'M-Pesa',
+            'bank_transfer' => 'Bank Transfer',
+            'cash' => 'Cash',
+            'cheque' => 'Cheque',
+            'other' => 'Other'
+        ];
+
+        return view('admin.payments.create', compact('students', 'courses', 'semesters', 'paymentMethods', 'admin'));
+    }
+
+    /**
+     * Store a newly created payment in storage
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        
+        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+            abort(403, 'Insufficient permissions to create payments.');
+        }
+
+        $validated = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'course_id' => 'required|exists:courses,id',
+            'semester_id' => 'required|exists:semesters,id',
+            'amount' => 'required|numeric|min:0.01',
+            'payment_date' => 'required|date',
+            'payment_method' => 'required|string|in:mpesa,bank_transfer,cash,cheque,other',
+            'payment_reference' => 'nullable|string|max:100',
+            'description' => 'nullable|string|max:500',
+            'status' => 'required|in:pending,completed,failed,cancelled',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Create the payment record
+            $payment = new Payment();
+            $payment->student_id = $validated['student_id'];
+            $payment->enrollment_id = null; // Will be set after enrollment is created/retrieved
+            $payment->amount = $validated['amount'];
+            $payment->payment_date = $validated['payment_date'];
+            $payment->payment_method = $validated['payment_method'];
+            $payment->payment_reference = $validated['payment_reference'] ?? 'MANUAL-' . strtoupper(uniqid());
+            $payment->description = $validated['description'] ?? 'Manual payment';
+            $payment->status = $validated['status'];
+            $payment->notes = $validated['notes'] ?? null;
+            $payment->verified_by = $admin->id;
+            $payment->verified_at = now();
+            $payment->save();
+
+            // Create activity log
+            activity()
+                ->causedBy($admin)
+                ->performedOn($payment)
+                ->withProperties([
+                    'amount' => $payment->amount,
+                    'method' => $payment->payment_method,
+                    'status' => $payment->status
+                ])
+                ->log('Payment manually recorded');
+
+            // If payment is marked as completed, process it
+            if ($payment->status === 'completed') {
+                $this->paymentService->processManualPayment($payment->id);
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.payments.show', $payment->id)
+                ->with('success', 'Payment recorded successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error creating payment: ' . $e->getMessage());
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to record payment. Please try again.']);
+        }
+    }
 }

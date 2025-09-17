@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Http\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Semester;
 
 class StudentController extends Controller
 {
@@ -49,6 +50,43 @@ class StudentController extends Controller
             ->paginate(10);
 
         return view('student.enrollments', compact('enrollments', 'student'));
+    }
+
+    /**
+     * Display enrollment form
+     */
+    public function enroll(): View
+    {
+        $student = Auth::guard('student')->user();
+        
+        // Get all available courses for enrollment
+        $now = now();
+        $availableCourses = Course::where('status', 'active')
+            ->where(function($query) use ($now) {
+                $query->whereNull('available_from')
+                      ->orWhere('available_from', '<=', $now);
+            })
+            ->where(function($query) use ($now) {
+                $query->whereNull('available_until')
+                      ->orWhere('available_until', '>=', $now);
+            })
+            ->get();
+
+        // Get the current active semester (auto-select)
+        $currentSemester = Semester::where('status', 'active')
+            ->orderBy('start_date', 'desc')
+            ->first();
+
+        // Get student's already enrolled courses to prevent duplicate enrollments
+        $enrolledCourses = $student->enrollments()
+            ->where('semester_id', $currentSemester?->id)
+            ->pluck('course_id')
+            ->toArray();
+
+        // Filter out courses the student is already enrolled in for this semester
+        $availableCourses = $availableCourses->whereNotIn('id', $enrolledCourses);
+
+        return view('student.enroll', compact('availableCourses', 'currentSemester', 'student'));
     }
 
     /**
@@ -327,76 +365,188 @@ class StudentController extends Controller
     }
 
     /**
-     * Store enrollment request
+     * Store a new enrollment
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function storeEnrollment(Request $request)
     {
         $request->validate([
             'course_id' => 'required|exists:courses,id',
-            'semester_id' => 'nullable|exists:semesters,id',
             'enrollment_type' => 'required|in:new,continuing,transfer,readmission',
             'payment_plan' => 'required|in:full_payment,installments',
         ]);
 
         $student = Auth::guard('student')->user();
         $course = Course::findOrFail($request->course_id);
+        
+        // Auto-select the current active semester
+        $semester = Semester::where('status', 'active')
+            ->where('enrollment_open', true)
+            ->orderBy('start_date', 'desc')
+            ->first();
 
-        // Check if student is already enrolled in this course
+        if (!$semester) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active enrollment period is currently available. Please contact the administration office.'
+            ], 422);
+        }
+
+        // Check if student is already enrolled in this course and semester
         $existingEnrollment = StudentEnrollment::where('student_id', $student->id)
             ->where('course_id', $course->id)
+            ->where('semester_id', $semester->id)
             ->first();
 
         if ($existingEnrollment) {
             return response()->json([
                 'success' => false,
-                'message' => 'You are already enrolled in this course.'
-            ]);
+                'message' => 'You are already enrolled in this course for the current semester.'
+            ], 422);
         }
 
-        // Check if course has available capacity
-        $currentEnrollments = StudentEnrollment::where('course_id', $course->id)
-            ->where('status', '!=', 'withdrawn')
-            ->count();
-
-        if ($course->enrollment_capacity && $currentEnrollments >= $course->enrollment_capacity) {
+        // Check if course is active and enrollment is open
+        if ($course->status !== 'active') {
             return response()->json([
                 'success' => false,
-                'message' => 'This course has reached its enrollment capacity.'
-            ]);
+                'message' => 'This course is not currently available for enrollment.'
+            ], 422);
         }
 
-        // Create enrollment record
-        $enrollment = StudentEnrollment::create([
-            'enrollment_number' => StudentEnrollment::generateEnrollmentNumber(),
-            'student_id' => $student->id,
-            'course_id' => $course->id,
-            'semester_id' => $request->semester_id,
-            'enrollment_date' => now(),
-            'enrollment_type' => $request->enrollment_type,
-            'status' => 'enrolled',
-            'payment_plan' => $request->payment_plan,
-            'total_fees_due' => $course->total_fee,
-            'fees_paid' => 0,
-            'outstanding_balance' => $course->total_fee,
-            'fees_fully_paid' => false,
-            'installment_count' => $request->payment_plan === 'installments' ? 4 : null,
-            'installment_amount' => $request->payment_plan === 'installments' ? ($course->total_fee / 4) : null,
-            'next_payment_due' => now()->addDays(30), // First payment due in 30 days
-        ]);
+        if (!$course->enrollment_open) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Enrollment for this course is currently closed.'
+            ], 422);
+        }
 
-        // Create notification for student
-        PaymentNotification::create([
-            'student_id' => $student->id,
-            'title' => 'Enrollment Successful',
-            'message' => "You have been successfully enrolled in {$course->name}. Please proceed with fee payment.",
-            'type' => 'enrollment',
-            'is_read' => false,
-        ]);
+        // Check enrollment period for the semester
+        $now = now();
+        if ($semester->enrollment_start_date && $now->lt($semester->enrollment_start_date)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Enrollment for this semester will open on ' . $semester->enrollment_start_date->format('F j, Y') . '.'
+            ], 422);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Enrollment successful! Please proceed with fee payment.',
-            'enrollment_number' => $enrollment->enrollment_number
-        ]);
+        if ($semester->enrollment_end_date && $now->gt($semester->enrollment_end_date)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Enrollment for this semester has closed on ' . $semester->enrollment_end_date->format('F j, Y') . '.'
+            ], 422);
+        }
+
+        // Check course capacity
+        if ($course->max_students !== null) {
+            $currentEnrollments = StudentEnrollment::where('course_id', $course->id)
+                ->where('semester_id', $semester->id)
+                ->whereIn('status', ['enrolled', 'pending_payment'])
+                ->count();
+
+            if ($currentEnrollments >= $course->max_students) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This course has reached its maximum enrollment capacity for the current semester.'
+                ], 422);
+            }
+        }
+
+        // Calculate total fees including additional fees
+        $totalFees = $course->total_fee + 
+                    ($course->registration_fee ?? 0) + 
+                    ($course->examination_fee ?? 0) + 
+                    ($course->library_fee ?? 0) + 
+                    ($course->lab_fee ?? 0);
+
+        // Calculate installment details if payment plan is installments
+        $installmentCount = null;
+        $installmentAmount = null;
+        $nextPaymentDue = now()->addDays(30);
+        
+        if ($request->payment_plan === 'installments') {
+            $installmentCount = min($course->max_installments ?? 4, 12); // Max 12 installments
+            $processingFee = $totalFees * 0.02; // 2% processing fee for installments
+            $totalWithFee = $totalFees + $processingFee;
+            $installmentAmount = $totalWithFee / $installmentCount;
+        } else {
+            // Apply 5% discount for full payment
+            $totalFees = $totalFees * 0.95;
+        }
+
+        try {
+            \DB::beginTransaction();
+
+            // Create enrollment record
+            $enrollment = StudentEnrollment::create([
+                'enrollment_number' => StudentEnrollment::generateEnrollmentNumber(),
+                'student_id' => $student->id,
+                'course_id' => $course->id,
+                'semester_id' => $semester->id,
+                'enrollment_date' => $now,
+                'enrollment_type' => $request->enrollment_type,
+                'status' => 'pending_payment', // Will be updated after payment
+                'payment_plan' => $request->payment_plan,
+                'total_fees_due' => $totalFees,
+                'fees_paid' => 0,
+                'outstanding_balance' => $totalFees,
+                'fees_fully_paid' => false,
+                'installment_count' => $installmentCount,
+                'installment_amount' => $installmentAmount,
+                'next_payment_due' => $nextPaymentDue,
+            ]);
+
+            // Create initial payment record if first installment is due
+            if ($request->payment_plan === 'installments' && $installmentAmount) {
+                $payment = new \App\Models\Payment([
+                    'student_id' => $student->id,
+                    'student_enrollment_id' => $enrollment->id,
+                    'amount' => $installmentAmount,
+                    'payment_method' => 'pending',
+                    'status' => 'pending',
+                    'due_date' => $nextPaymentDue,
+                    'description' => 'Initial installment payment for ' . $course->name,
+                ]);
+                $payment->save();
+            }
+
+            // Create notification for student
+            PaymentNotification::create([
+                'student_id' => $student->id,
+                'title' => 'Enrollment Submitted',
+                'message' => "Your enrollment for {$course->name} has been submitted. Please complete your payment to secure your spot.",
+                'type' => 'enrollment',
+                'is_read' => false,
+            ]);
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Enrollment submitted successfully! Please complete your payment to secure your spot.',
+                'enrollment_number' => $enrollment->enrollment_number,
+                'enrollment' => [
+                    'id' => $enrollment->id,
+                    'enrollment_number' => $enrollment->enrollment_number,
+                    'course_name' => $course->name,
+                    'semester' => $semester->name . ' ' . $semester->academic_year,
+                    'total_fees' => number_format($totalFees, 2),
+                    'payment_plan' => $request->payment_plan === 'installments' ? 'Installment Plan' : 'Full Payment',
+                    'next_payment_due' => $nextPaymentDue->format('F j, Y'),
+                    'next_payment_amount' => $request->payment_plan === 'installments' ? number_format($installmentAmount, 2) : number_format($totalFees, 2),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Enrollment Error - Student ID: ' . $student->id . ' - ' . $e->getMessage());
+            \Log::error($e);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing your enrollment. Please try again or contact support if the problem persists.'
+            ], 500);
+        }
     }
 }

@@ -242,23 +242,30 @@ class StudentEnrollment extends Model
     }
 
     /**
-     * Generate unique enrollment number.
+     * Generate a unique enrollment number
+     * Format: ENR-YYYYMM-XXXX (e.g., ENR-202409-0001)
+     * 
+     * @return string
      */
     public static function generateEnrollmentNumber(): string
     {
-        $year = date('Y');
-        $lastEnrollment = self::where('enrollment_number', 'like', "ENR{$year}%")
+        $prefix = 'ENR-' . now()->format('Ym') . '-';
+        
+        // Get the last enrollment number for this month
+        $lastEnrollment = static::where('enrollment_number', 'like', $prefix . '%')
             ->orderBy('enrollment_number', 'desc')
             ->first();
 
         if ($lastEnrollment) {
+            // Extract the number part and increment
             $lastNumber = (int) substr($lastEnrollment->enrollment_number, -4);
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            $nextNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
         } else {
-            $newNumber = '0001';
+            // First enrollment of the month
+            $nextNumber = '0001';
         }
 
-        return "ENR{$year}{$newNumber}";
+        return $prefix . $nextNumber;
     }
 
     /**

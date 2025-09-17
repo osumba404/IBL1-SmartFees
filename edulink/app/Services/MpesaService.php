@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\Cache;
  */
 class MpesaService
 {
-    protected string $consumerKey;
-    protected string $consumerSecret;
-    protected string $shortcode;
-    protected string $passkey;
-    protected string $callbackUrl;
+    protected ?string $consumerKey;
+    protected ?string $consumerSecret;
+    protected ?string $shortcode;
+    protected ?string $passkey;
+    protected ?string $callbackUrl;
     protected string $baseUrl;
     protected bool $sandbox;
 
@@ -49,6 +49,11 @@ class MpesaService
         }
 
         try {
+            if (!$this->consumerKey || !$this->consumerSecret) {
+                Log::error('M-Pesa consumer key or secret is missing');
+                return null;
+            }
+
             $credentials = base64_encode($this->consumerKey . ':' . $this->consumerSecret);
             
             $response = Http::withHeaders([
@@ -86,6 +91,11 @@ class MpesaService
      */
     protected function generatePassword(): string
     {
+        if (!$this->shortcode || !$this->passkey) {
+            Log::error('M-Pesa shortcode or passkey is missing');
+            throw new \Exception('M-Pesa shortcode or passkey is missing');
+        }
+
         $timestamp = now()->format('YmdHis');
         return base64_encode($this->shortcode . $this->passkey . $timestamp);
     }

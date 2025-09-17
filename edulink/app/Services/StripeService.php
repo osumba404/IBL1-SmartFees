@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\Log;
  */
 class StripeService
 {
-    protected string $secretKey;
-    protected string $publishableKey;
-    protected string $webhookSecret;
+    protected ?string $secretKey;
+    protected ?string $publishableKey;
+    protected ?string $webhookSecret;
 
     public function __construct()
     {
@@ -29,7 +29,9 @@ class StripeService
         $this->publishableKey = config('services.stripe.key');
         $this->webhookSecret = config('services.stripe.webhook_secret');
         
-        Stripe::setApiKey($this->secretKey);
+        if ($this->secretKey) {
+            Stripe::setApiKey($this->secretKey);
+        }
     }
 
     /**
@@ -42,6 +44,14 @@ class StripeService
         ?string $customerId = null
     ): array {
         try {
+            if (!$this->secretKey) {
+                Log::error('Stripe secret key is not configured');
+                return [
+                    'success' => false,
+                    'message' => 'Stripe payment service is not configured'
+                ];
+            }
+
             $paymentIntentData = [
                 'amount' => $this->convertToSmallestUnit($amount, $currency),
                 'currency' => strtolower($currency),
