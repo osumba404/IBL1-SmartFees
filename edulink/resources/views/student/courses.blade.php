@@ -173,54 +173,38 @@
             </div>
             <div class="modal-body">
                 <div id="courseDetails"></div>
-                <form id="enrollmentForm">
-                    @csrf
-                    <input type="hidden" id="courseId" name="course_id">
-                    
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>Note:</strong> Course enrollment requires approval from the admissions office. 
-                        You will be notified once your enrollment is processed.
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Enrollment Type <span class="text-danger">*</span></label>
-                        <select class="form-select" name="enrollment_type" required>
-                            <option value="">Select enrollment type</option>
-                            <option value="new">New Student</option>
-                            <option value="continuing">Continuing Student</option>
-                            <option value="transfer">Transfer Student</option>
-                            <option value="readmission">Readmission</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Payment Plan <span class="text-danger">*</span></label>
-                        <select class="form-select" name="payment_plan" required>
-                            <option value="">Select payment plan</option>
-                            <option value="full_payment">Full Payment</option>
-                            <option value="installments">Installments (4 payments)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Semester (Optional)</label>
-                        <select class="form-select" name="semester_id">
-                            <option value="">Select semester (if applicable)</option>
-                            <!-- Add semester options here if needed -->
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Preferred Start Date</label>
-                        <input type="date" class="form-control" name="preferred_start_date" min="{{ date('Y-m-d') }}" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Additional Comments (Optional)</label>
-                        <textarea class="form-control" name="comments" rows="3" placeholder="Any additional information or special requests..."></textarea>
-                    </div>
-                </form>
+                
+                <form id="enrollmentForm" action="{{ route('student.enrollments.store') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="course_id" id="enrollmentCourseId">
+                        
+                        <div class="alert alert-info" role="alert">
+                            You are enrolling for the current active semester: <strong>{{ \App\Models\Semester::current()?->name ?? 'N/A' }}</strong>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="enrollment_type" class="form-label">Enrollment Type</label>
+                            <select class="form-select" id="enrollment_type" name="enrollment_type" required>
+                                <option value="new" selected>New Student</option>
+                                <option value="continuing">Continuing Student</option>
+                                <option value="transfer">Transfer</option>
+                                <option value="readmission">Readmission</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_plan" class="form-label">Payment Plan</label>
+                            <select class="form-select" id="payment_plan" name="payment_plan" required>
+                                <option value="full_payment">Full Payment (5% Discount)</option>
+                                <option value="installments">Installments</option>
+                            </select>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Submit Enrollment</button>
+                        </div>
+                    </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

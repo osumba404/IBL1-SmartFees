@@ -72,10 +72,10 @@ class StudentController extends Controller
             })
             ->get();
 
-        // Get the current active semester (auto-select)
-        $currentSemester = Semester::where('status', 'active')
-            ->orderBy('start_date', 'desc')
-            ->first();
+                // Get the current active semester (auto-select)
+                $currentSemester = Semester::current() ?? Semester::where('status', 'active')
+                ->orderBy('start_date', 'desc')
+                ->first();
 
         // Get student's already enrolled courses to prevent duplicate enrollments
         $enrolledCourses = $student->enrollments()
@@ -381,11 +381,10 @@ class StudentController extends Controller
         $student = Auth::guard('student')->user();
         $course = Course::findOrFail($request->course_id);
         
-        // Auto-select the current active semester
-        $semester = Semester::where('status', 'active')
-            ->where('enrollment_open', true)
-            ->orderBy('start_date', 'desc')
-            ->first();
+        // Determine current semester and validate registration window
+        $semester = Semester::current() ?? Semester::where('status', 'active')
+        ->orderBy('start_date', 'desc')
+        ->first();
 
         if (!$semester) {
             return response()->json([
@@ -407,43 +406,30 @@ class StudentController extends Controller
             ], 422);
         }
 
-        // Check if course is active and enrollment is open
-        if ($course->status !== 'active') {
+        // Validate course availability and capacity
+        if (!$course->isAvailable()) {
             return response()->json([
                 'success' => false,
                 'message' => 'This course is not currently available for enrollment.'
             ], 422);
         }
 
-        if (!$course->enrollment_open) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Enrollment for this course is currently closed.'
-            ], 422);
-        }
 
-        // Check enrollment period for the semester
+        // Registration must be open OR late enrollment allowed and still valid
         $now = now();
-        if ($semester->enrollment_start_date && $now->lt($semester->enrollment_start_date)) {
+        if (!$semester->isRegistrationOpen() && !$semester->isLateEnrollmentOpen()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Enrollment for this semester will open on ' . $semester->enrollment_start_date->format('F j, Y') . '.'
+                'message' => 'Registration is currently closed for the active semester.'
             ], 422);
         }
 
-        if ($semester->enrollment_end_date && $now->gt($semester->enrollment_end_date)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Enrollment for this semester has closed on ' . $semester->enrollment_end_date->format('F j, Y') . '.'
-            ], 422);
-        }
-
-        // Check course capacity
-        if ($course->max_students !== null) {
-            $currentEnrollments = StudentEnrollment::where('course_id', $course->id)
-                ->where('semester_id', $semester->id)
-                ->whereIn('status', ['enrolled', 'pending_payment'])
-                ->count();
+            // Check course capacity
+            if ($course->max_students !== null) {
+                $currentEnrollments = StudentEnrollment::where('course_id', $course->id)
+                    ->where('semester_id', $semester->id)
+                    ->where('status', 'enrolled')
+                    ->count();
 
             if ($currentEnrollments >= $course->max_students) {
                 return response()->json([
@@ -478,7 +464,8 @@ class StudentController extends Controller
         try {
             \DB::beginTransaction();
 
-            // Create enrollment record
+            $now = now();
+            // Create enrollment record. Status must be valid per migration enum.
             $enrollment = StudentEnrollment::create([
                 'enrollment_number' => StudentEnrollment::generateEnrollmentNumber(),
                 'student_id' => $student->id,
@@ -486,7 +473,7 @@ class StudentController extends Controller
                 'semester_id' => $semester->id,
                 'enrollment_date' => $now,
                 'enrollment_type' => $request->enrollment_type,
-                'status' => 'pending_payment', // Will be updated after payment
+                'status' => 'enrolled',
                 'payment_plan' => $request->payment_plan,
                 'total_fees_due' => $totalFees,
                 'fees_paid' => 0,
@@ -494,7 +481,7 @@ class StudentController extends Controller
                 'fees_fully_paid' => false,
                 'installment_count' => $installmentCount,
                 'installment_amount' => $installmentAmount,
-                'next_payment_due' => $nextPaymentDue,
+                'next_payment_due' => ($request->payment_plan === 'installments' ? $nextPaymentDue : $semester->fee_payment_deadline)?->format('F j, Y'),
             ]);
 
             // Create initial payment record if first installment is due
