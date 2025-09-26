@@ -209,11 +209,30 @@ class Semester extends Model
     }
 
     /**
-     * Get current semester.
+     * Get the active semester for enrollment (current, upcoming, or last active).
      */
     public static function current(): ?self
     {
-        return self::where('is_current_semester', true)->first();
+        // 1. Try to find the explicitly set current and active semester
+        $current = self::where('is_current_semester', true)->where('status', 'active')->first();
+        if ($current) {
+            return $current;
+        }
+
+        // 2. If no current, find the next upcoming active semester
+        $upcoming = self::where('status', 'active')
+            ->where('start_date', '>', now())
+            ->orderBy('start_date', 'asc')
+            ->first();
+        if ($upcoming) {
+            return $upcoming;
+        }
+
+        // 3. If none upcoming, fall back to the most recently started active semester
+        return self::where('status', 'active')
+            ->where('start_date', '<=', now())
+            ->orderBy('start_date', 'desc')
+            ->first();
     }
 
     /**

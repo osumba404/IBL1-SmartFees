@@ -34,7 +34,9 @@ class StudentController extends Controller
             ->pluck('course_id')
             ->toArray();
 
-        return view('student.courses', compact('availableCourses', 'enrolledCourses', 'student'));
+            $currentSemester = Semester::current();
+
+            return view('student.courses', compact('availableCourses', 'enrolledCourses', 'student', 'currentSemester'));
     }
 
     /**
@@ -452,7 +454,8 @@ class StudentController extends Controller
         $nextPaymentDue = now()->addDays(30);
         
         if ($request->payment_plan === 'installments') {
-            $installmentCount = min($course->max_installments ?? 4, 12); // Max 12 installments
+            // Ensure installment count is at least 1, defaulting to 4 if not set.
+            $installmentCount = $course->max_installments > 0 ? min($course->max_installments, 12) : 4;
             $processingFee = $totalFees * 0.02; // 2% processing fee for installments
             $totalWithFee = $totalFees + $processingFee;
             $installmentAmount = $totalWithFee / $installmentCount;
@@ -520,7 +523,7 @@ class StudentController extends Controller
                     'semester' => $semester->name . ' ' . $semester->academic_year,
                     'total_fees' => number_format($totalFees, 2),
                     'payment_plan' => $request->payment_plan === 'installments' ? 'Installment Plan' : 'Full Payment',
-                    'next_payment_due' => $nextPaymentDue->format('F j, Y'),
+                    'next_payment_due' => ($enrollment->next_payment_due) ? $enrollment->next_payment_due->format('F j, Y') : 'N/A',
                     'next_payment_amount' => $request->payment_plan === 'installments' ? number_format($installmentAmount, 2) : number_format($totalFees, 2),
                 ]
             ]);

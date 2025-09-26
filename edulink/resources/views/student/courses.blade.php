@@ -179,7 +179,7 @@
                         <input type="hidden" name="course_id" id="enrollmentCourseId">
                         
                         <div class="alert alert-info" role="alert">
-                            You are enrolling for the current active semester: <strong>{{ \App\Models\Semester::current()?->name ?? 'N/A' }}</strong>
+                        You are enrolling for the current active semester: <strong>{{ $currentSemester?->name ?? 'N/A' }}</strong>
                         </div>
 
                         <div class="mb-3">
