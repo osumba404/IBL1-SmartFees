@@ -481,7 +481,7 @@ class StudentController extends Controller
                 'fees_fully_paid' => false,
                 'installment_count' => $installmentCount,
                 'installment_amount' => $installmentAmount,
-                'next_payment_due' => ($request->payment_plan === 'installments' ? $nextPaymentDue : $semester->fee_payment_deadline)?->format('F j, Y'),
+                'next_payment_due' => $request->payment_plan === 'installments' ? $nextPaymentDue : $semester->fee_payment_deadline,
             ]);
 
             // Create initial payment record if first installment is due

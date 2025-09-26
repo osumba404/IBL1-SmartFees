@@ -206,10 +206,10 @@
                         </div>
                     </form>
             </div>
-            <div class="modal-footer">
+            <!-- <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="submitEnrollment()">Submit Enrollment Request</button>
-            </div>
+            </div> -->
         </div>
     </div>
 </div>
@@ -242,7 +242,7 @@ function showEnrollmentModal(courseId) {
     selectedCourse = @json($availableCourses->keyBy('id'));
     const course = selectedCourse[courseId];
     
-    document.getElementById('courseId').value = courseId;
+    document.getElementById('enrollmentCourseId').value = courseId;
     
     const courseDetails = `
         <div class="mb-3">
