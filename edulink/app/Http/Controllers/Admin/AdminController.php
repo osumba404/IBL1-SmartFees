@@ -142,6 +142,18 @@ class AdminController extends Controller
             ->with('success', 'Fee structure created successfully.');
     }
 
+
+        /**
+     * Display the specified fee structure.
+     */
+    public function showFeeStructure(FeeStructure $feeStructure): View
+    {
+        $admin = Auth::guard('admin')->user();
+        $feeStructure->load(['course', 'semester']); // Eager load relationships
+
+        return view('admin.fees.show', compact('feeStructure', 'admin'));
+    }
+
     /**
      * Show form to edit fee structure
      */

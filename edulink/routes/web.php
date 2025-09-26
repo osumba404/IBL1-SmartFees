@@ -179,6 +179,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [AdminController::class, 'feeStructures'])->name('index');
             Route::get('/create', [AdminController::class, 'createFeeStructure'])->name('create');
             Route::post('/', [AdminController::class, 'storeFeeStructure'])->name('store');
+            Route::get('/{feeStructure}', [AdminController::class, 'showFeeStructure'])->name('show'); // Add this line
             Route::get('/{feeStructure}/edit', [AdminController::class, 'editFeeStructure'])->name('edit');
             Route::put('/{feeStructure}', [AdminController::class, 'updateFeeStructure'])->name('update');
             Route::delete('/{feeStructure}', [AdminController::class, 'destroyFeeStructure'])->name('destroy');
