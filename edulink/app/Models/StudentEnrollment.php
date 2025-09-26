@@ -92,6 +92,17 @@ class StudentEnrollment extends Model
         return $this->belongsTo(Semester::class);
     }
 
+        /**
+     * Get the fee structure for this enrollment.
+     * An enrollment is linked to the active fee structure for its course and semester.
+     */
+    public function feeStructure(): BelongsTo
+    {
+        return $this->belongsTo(FeeStructure::class, 'course_id', 'course_id')
+            ->where('semester_id', $this->semester_id)
+            ->where('status', 'active');
+    }
+
     /**
      * Get all payments for this enrollment.
      */
