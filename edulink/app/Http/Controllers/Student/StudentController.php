@@ -442,11 +442,11 @@ class StudentController extends Controller
         }
 
         // Calculate total fees including additional fees
-        $totalFees = $course->total_fee + 
-                    ($course->registration_fee ?? 0) + 
-                    ($course->examination_fee ?? 0) + 
-                    ($course->library_fee ?? 0) + 
-                    ($course->lab_fee ?? 0);
+        $totalFees = ($course->tuition_fee ?? 0) + 
+                ($course->registration_fee ?? 0) + 
+                ($course->examination_fee ?? 0) + 
+                ($course->library_fee ?? 0) + 
+                ($course->lab_fee ?? 0);
 
         // Calculate installment details if payment plan is installments
         $installmentCount = null;
@@ -487,6 +487,7 @@ class StudentController extends Controller
                 'next_payment_due' => $request->payment_plan === 'installments' ? $nextPaymentDue : $semester->fee_payment_deadline,
             ]);
 
+            $payment = null;
             // Create initial payment record if first installment is due
             if ($request->payment_plan === 'installments' && $installmentAmount) {
                 $payment = new \App\Models\Payment([
@@ -504,10 +505,10 @@ class StudentController extends Controller
             // Create notification for student
             PaymentNotification::create([
                 'student_id' => $student->id,
+                'payment_id' => $payment->id ?? null,
                 'title' => 'Enrollment Submitted',
                 'message' => "Your enrollment for {$course->name} has been submitted. Please complete your payment to secure your spot.",
-                'type' => 'enrollment',
-                'is_read' => false,
+                'notification_type' => 'enrollment', 
             ]);
 
             \DB::commit();
@@ -530,12 +531,19 @@ class StudentController extends Controller
 
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error('Enrollment Error - Student ID: ' . $student->id . ' - ' . $e->getMessage());
-            \Log::error($e);
+            // Log the detailed error for the developer
+            \Log::error('Enrollment Error - Student ID: ' . ($student->id ?? 'N/A') . ' - ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
             
+            // Prepare a detailed error message for debug mode
+            $errorMessage = 'An error occurred while processing your enrollment. Please try again or contact support if the problem persists.';
+            if (config('app.debug')) {
+                $errorMessage = 'Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine();
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while processing your enrollment. Please try again or contact support if the problem persists.'
+                'message' => $errorMessage
             ], 500);
         }
     }
