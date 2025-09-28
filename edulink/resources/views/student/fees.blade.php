@@ -180,9 +180,14 @@
                                                             Pay Now
                                                         </button>
                                                     @endif
-                                                    <button class="btn btn-outline-primary btn-sm" onclick="viewDetails({{ $enrollment->id }})">
+
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                            onclick="window.location.href='{{ route('student.enrollments.show', $enrollment->id) }}'">
                                                         Details
                                                     </button>
+                                                    <!-- <button type="button" class="btn btn-outline-primary btn-sm btn-details" data-enrollment-id="{{ $enrollment->id }}">
+                                                        Details
+                                                    </button> -->
                                                 </div>
                                             </td>
                                         </tr>
@@ -296,14 +301,71 @@
         </div>
     </div>
 </div>
+
+<!-- Fee Details Modal -->
+<div class="modal fade" id="feeDetailsModal" tabindex="-1" aria-labelledby="feeDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="feeDetailsModalLabel">Fee Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p><strong>Enrollment Status:</strong> <span id="enrollmentStatus">-</span></p>
+                        <p><strong>Payment Plan:</strong> <span id="paymentPlan">-</span></p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p><strong>Next Payment Due:</strong> <span id="nextPaymentDue">-</span></p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fee Type</th>
+                                <th class="text-end">Amount (KES)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feeBreakdownBody">
+                            <!-- Fee breakdown will be populated here by JavaScript -->
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th>Total Amount</th>
+                                <th class="text-end" id="totalAmount">-</th>
+                            </tr>
+                            <tr>
+                                <th>Total Paid</th>
+                                <th class="text-end" id="totalPaid">-</th>
+                            </tr>
+                            <tr class="table-active">
+                                <th>Outstanding Balance</th>
+                                <th class="text-end" id="outstandingBalance">-</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
+// function initiatePayment(enrollmentId) {
+//     document.getElementById('enrollmentId').value = enrollmentId;
 function initiatePayment(enrollmentId) {
-    document.getElementById('enrollmentId').value = enrollmentId;
-    new bootstrap.Modal(document.getElementById('paymentModal')).show();
+    window.location.href = '{{ route("student.payments.create") }}?enrollment=' + enrollmentId;
 }
+//     new bootstrap.Modal(document.getElementById('paymentModal')).show();
+// }
 
 function viewDetails(enrollmentId) {
     // Redirect to enrollment details or show details modal
@@ -354,6 +416,84 @@ document.querySelector('select[name="payment_method"]').addEventListener('change
     } else {
         mpesaFields.style.display = 'none';
     }
+});
+
+
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded'); // Debug log
+
+    // Handle "Details" button click
+    document.querySelectorAll('.btn-details').forEach(button => {
+        console.log('Found button:', button); // Debug log
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation(); // Stop event bubbling
+            console.log('Button clicked, enrollment ID:', this.dataset.enrollmentId); // Debug log
+
+            const enrollmentId = this.dataset.enrollmentId;
+            const url = `/student/enrollments/${enrollmentId}/fee-details`;
+            console.log('Fetching URL:', url); // Debug log
+
+            fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => {
+                console.log('Response status:', response.status); // Debug log
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data); // Debug log
+                if (data.success) {
+                    // Populate the modal with the fee details
+                    document.getElementById('feeDetailsModalLabel').textContent = `Fee Details - ${data.course_name}`;
+                    
+                    // Build the fee breakdown HTML
+                    let breakdownHtml = '';
+                    for (const [key, value] of Object.entries(data.breakdown)) {
+                        breakdownHtml += `
+                            <tr>
+                                <td>${key}</td>
+                                <td class="text-end">KES ${value}</td>
+                            </tr>
+                        `;
+                    }
+
+                    // Update the modal body
+                    document.getElementById('feeBreakdownBody').innerHTML = breakdownHtml;
+                    
+                    // Update the summary
+                    document.getElementById('enrollmentStatus').textContent = data.enrollment_status;
+                    document.getElementById('paymentPlan').textContent = data.payment_plan;
+                    document.getElementById('totalAmount').textContent = `KES ${data.total_amount}`;
+                    document.getElementById('totalPaid').textContent = `KES ${data.total_paid}`;
+                    document.getElementById('outstandingBalance').textContent = `KES ${data.outstanding_balance}`;
+                    document.getElementById('nextPaymentDue').textContent = data.next_payment_due;
+                    
+                    // Show the modal
+                    const modal = new bootstrap.Modal(document.getElementById('feeDetailsModal'));
+                    modal.show();
+                } else {
+                    console.error('API error:', data.message); // Debug log
+                    alert(data.message || 'Failed to load fee details. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error); // Debug log
+                alert('An error occurred while fetching fee details. Check the console for details.');
+            });
+        });
+    });
 });
 </script>
 @endpush

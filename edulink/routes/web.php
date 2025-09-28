@@ -44,7 +44,18 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('/profile', [StudentAuthController::class, 'profile'])->name('profile');
         Route::put('/profile', [StudentAuthController::class, 'updateProfile'])->name('profile.update');
         Route::put('/password', [StudentAuthController::class, 'changePassword'])->name('password.change');
-        
+        Route::get('/enrollments/{enrollment}/fee-details', [StudentController::class, 'getFeeDetails'])
+        ->name('enrollments.fee-details');
+        Route::get('/enrollments/{enrollment}', [StudentController::class, 'showEnrollment'])->name('enrollments.show');
+
+        Route::get('/statements/pdf', [StudentController::class, 'downloadStatement'])->name('statements.pdf');
+
+        Route::post('/enrollments/{enrollment}/defer', [StudentController::class, 'deferEnrollment'])
+    ->name('enrollments.defer');
+    Route::post('/enrollments/{enrollment}/resume', [StudentController::class, 'resumeEnrollment'])
+    ->name('enrollments.resume');
+
+
         // Student portal routes
         Route::get('/courses', [StudentController::class, 'courses'])->name('courses.index');
         Route::get('/enrollments', [StudentController::class, 'enrollments'])->name('enrollments.index');
@@ -58,14 +69,18 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('/statements/download', [StudentController::class, 'downloadStatement'])->name('statements.download');
         Route::get('/settings', [StudentController::class, 'settings'])->name('settings');
         Route::put('/settings', [StudentController::class, 'updateSettings'])->name('settings.update');
-        
+        Route::get('/statements/download', [StudentController::class, 'downloadStatement'])
+    ->name('statements.download');
+
         // Payment processing routes
         Route::post('/payments/initiate', [StudentPaymentController::class, 'initiate'])->name('payments.initiate');
         Route::get('/payments/mpesa/callback', [StudentPaymentController::class, 'mpesaCallback'])->name('payments.mpesa.callback');
         Route::post('/payments/stripe/webhook', [StudentPaymentController::class, 'stripeWebhook'])->name('payments.stripe.webhook');
         Route::get('/payments/success', [StudentPaymentController::class, 'paymentSuccess'])->name('payments.success');
         Route::get('/payments/cancel', [StudentPaymentController::class, 'paymentCancel'])->name('payments.cancel');
-        
+        Route::get('/payments/create', [StudentPaymentController::class, 'create'])
+    ->name('payments.create');
+
         // Notifications
         Route::get('/notifications', [StudentController::class, 'notifications'])->name('notifications.index');
         Route::post('/notifications/{notification}/read', [StudentController::class, 'markNotificationRead'])->name('notifications.read');
@@ -119,6 +134,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/bulk-update', [StudentManagementController::class, 'bulkUpdate'])->name('bulk-update');
             Route::get('/export', [StudentManagementController::class, 'export'])->name('export');
             Route::post('/import', [StudentManagementController::class, 'import'])->name('import');
+            Route::get('/enrollments/{enrollment}/fee-details', [StudentController::class, 'getFeeDetails'])
+            ->name('enrollments.fee-details');
         });
         
         // Course Management Routes (requires manage_courses permission)

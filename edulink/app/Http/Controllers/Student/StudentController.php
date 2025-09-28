@@ -366,6 +366,139 @@ class StudentController extends Controller
         return $enabledMethods;
     }
 
+
+
+
+    /**
+ * Handle enrollment deferment request
+ */
+public function deferEnrollment(Request $request, StudentEnrollment $enrollment)
+{
+    // Ensure the enrollment belongs to the authenticated student
+    if ($enrollment->student_id !== auth('student')->id()) {
+        abort(403, 'Unauthorized action.');
+    }
+
+    $validated = $request->validate([
+        'reason' => 'required|string|max:500',
+        'start_date' => 'required|date|after_or_equal:today',
+        'end_date' => 'required|date|after:start_date',
+    ]);
+
+    try {
+        // Update enrollment status
+        $enrollment->update([
+            'status' => 'pending_deferment',
+            'status_change_reason' => $validated['reason'],
+            'is_deferred' => true,
+            'deferment_start_date' => $validated['start_date'],
+            'deferment_end_date' => $validated['end_date'],
+            'deferment_reason' => $validated['reason'],
+        ]);
+
+        // Notify admin about the deferment request
+        // You'll need to implement your notification system here
+        // Example: Notification::send(/* admin users */, new EnrollmentDefermentRequested($enrollment));
+
+        return redirect()->back()->with('success', 'Your deferment request has been submitted for approval.');
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Failed to process deferment request. Please try again.');
+    }
+}
+
+
+
+
+    /**
+     * Handle enrollment resumption request
+     */
+    public function resumeEnrollment(StudentEnrollment $enrollment)
+    {
+        // Ensure the enrollment belongs to the authenticated student
+        if ($enrollment->student_id !== auth('student')->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        try {
+            // Update enrollment status
+            $enrollment->update([
+                'status' => 'active',
+                'status_change_reason' => 'Student resumed studies after deferment',
+                'is_deferred' => false,
+                'deferment_end_date' => now(),
+            ]);
+
+            return redirect()->back()->with('success', 'Your enrollment has been resumed successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to resume enrollment. Please try again.');
+        }
+    }
+
+
+
+    
+
+    /**
+ * Get fee details for a specific enrollment (AJAX).
+ */
+public function getFeeDetails(StudentEnrollment $enrollment)
+{
+    // Ensure the authenticated student owns this enrollment
+    if ($enrollment->student_id !== auth('student')->id()) {
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+    }
+
+    $feeStructure = $enrollment->feeStructure;
+
+    if (!$feeStructure) {
+        return response()->json(['success' => false, 'message' => 'No fee structure found for this enrollment.'], 404);
+    }
+
+    // Return a subset of fee details suitable for students
+    return response()->json([
+        'success' => true,
+        'course_name' => $enrollment->course->name,
+        'semester_name' => $enrollment->semester->name,
+        'fee_structure_code' => $feeStructure->fee_structure_code,
+        'total_amount' => number_format($feeStructure->total_amount, 2),
+        'breakdown' => [
+            'Tuition Fee' => number_format($feeStructure->tuition_fee, 2),
+            'Registration Fee' => number_format($feeStructure->registration_fee, 2),
+            'Library Fee' => number_format($feeStructure->library_fee, 2),
+            'Lab Fee' => number_format($feeStructure->lab_fee, 2),
+            'Examination Fee' => number_format($feeStructure->examination_fee, 2),
+            'Activity Fee' => number_format($feeStructure->activity_fee, 2),
+            'Technology Fee' => number_format($feeStructure->technology_fee, 2),
+            'Student Services Fee' => number_format($feeStructure->student_services_fee, 2),
+        ],
+        'enrollment_status' => ucfirst($enrollment->status),
+        'payment_plan' => ucwords(str_replace('_', ' ', $enrollment->payment_plan)),
+        'total_paid' => number_format($enrollment->fees_paid, 2),
+        'outstanding_balance' => number_format($enrollment->outstanding_balance, 2),
+        'next_payment_due' => $enrollment->next_payment_due ? $enrollment->next_payment_due->format('F j, Y') : 'N/A',
+    ]);
+}
+
+
+
+        /**
+     * Display the specified enrollment.
+     */
+    public function showEnrollment(StudentEnrollment $enrollment): View
+    {
+        // Ensure the enrollment belongs to the authenticated student
+        if ($enrollment->student_id !== auth('student')->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Load related data
+        $enrollment->load(['course', 'semester', 'feeStructure', 'payments' => function($query) {
+            $query->orderBy('created_at', 'desc');
+        }]);
+
+        return view('student.enrollments.show', compact('enrollment'));
+    }
+
     /**
      * Store a new enrollment
      *
