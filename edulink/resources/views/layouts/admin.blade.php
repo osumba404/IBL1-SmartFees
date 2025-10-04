@@ -145,6 +145,11 @@
             cursor: pointer;
             margin-right: 1rem;
         }
+        
+        .sidebar-toggle i {
+            color: var(--secondary-color);
+            font-size: 1.25rem;
+        }
 
         .user-menu {
             margin-left: auto;
@@ -520,9 +525,23 @@
             sidebarToggle.addEventListener('click', function() {
                 if (window.innerWidth <= 768) {
                     sidebar.classList.toggle('show');
+                    // Toggle icon for mobile
+                    const icon = sidebarToggle.querySelector('i');
+                    if (sidebar.classList.contains('show')) {
+                        icon.className = 'bi bi-x-lg';
+                    } else {
+                        icon.className = 'bi bi-list';
+                    }
                 } else {
                     sidebar.classList.toggle('collapsed');
                     mainContent.classList.toggle('expanded');
+                    // Toggle icon for desktop
+                    const icon = sidebarToggle.querySelector('i');
+                    if (sidebar.classList.contains('collapsed')) {
+                        icon.className = 'bi bi-list';
+                    } else {
+                        icon.className = 'bi bi-list';
+                    }
                 }
             });
 
@@ -531,6 +550,9 @@
                 if (window.innerWidth <= 768) {
                     if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
                         sidebar.classList.remove('show');
+                        // Reset icon when closing
+                        const icon = sidebarToggle.querySelector('i');
+                        icon.className = 'bi bi-list';
                     }
                 }
             });
@@ -539,6 +561,9 @@
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 768) {
                     sidebar.classList.remove('show');
+                    // Reset icon on resize
+                    const icon = sidebarToggle.querySelector('i');
+                    icon.className = 'bi bi-list';
                 }
             });
 

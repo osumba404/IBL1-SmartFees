@@ -6,7 +6,7 @@
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="card shadow-sm">
+            <div class="card">
                 <div class="card-body p-5">
                     <h1 class="mb-4">Privacy Policy</h1>
                     <p class="text-muted mb-4">Last updated: {{ date('F d, Y') }}</p>

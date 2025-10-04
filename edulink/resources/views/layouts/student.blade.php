@@ -48,6 +48,21 @@
             font-size: 1.5rem;
             font-weight: 600;
             color: white !important;
+            padding-right: 4rem;
+        }
+        
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.4rem;
+                padding-right: 3rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .navbar-brand {
+                font-size: 1.3rem;
+                padding-right: 3rem;
+            }
         }
 
         .navbar-nav .nav-link {
@@ -66,11 +81,30 @@
         }
 
         .navbar-toggler {
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 0.25rem 0.5rem;
-            margin-left: auto;
-            order: 2;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white !important;
+            padding: 0.3rem 0.5rem;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            z-index: 1050;
+        }
+        
+        .navbar-toggler i {
+            color: white !important;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .navbar-toggler-icon {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .navbar > .container {
+            position: relative;
         }
 
         .navbar-toggler:focus {
@@ -601,6 +635,24 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Custom JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbarToggler = document.querySelector('.navbar-toggler');
+            const navbarCollapse = document.querySelector('#navbarNav');
+            
+            if (navbarToggler && navbarCollapse) {
+                navbarCollapse.addEventListener('shown.bs.collapse', function() {
+                    navbarToggler.innerHTML = '<i class="bi bi-x-lg" style="color: white !important; font-size: 1.2rem;"></i>';
+                });
+                
+                navbarCollapse.addEventListener('hidden.bs.collapse', function() {
+                    navbarToggler.innerHTML = '<span class="navbar-toggler-icon"></span>';
+                });
+            }
+        });
+    </script>
+    
+    <!-- Additional JS -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Auto-hide alerts after 5 seconds
