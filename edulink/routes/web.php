@@ -38,7 +38,7 @@ Route::prefix('student')->name('student.')->group(function () {
     });
 
     // Authenticated student routes
-    Route::middleware(['auth:student', 'student.active'])->group(function () {
+    Route::middleware(['auth:student', 'student.active', 'web'])->group(function () {
         Route::post('/logout', [StudentAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [StudentAuthController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [StudentAuthController::class, 'profile'])->name('profile');
@@ -107,7 +107,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     });
 
     // Authenticated admin routes
-    Route::middleware(['web', 'auth:admin'])->group(function () {
+    Route::middleware(['web', 'auth:admin', 'csrf'])->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [AdminAuthController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [AdminAuthController::class, 'profile'])->name('profile');

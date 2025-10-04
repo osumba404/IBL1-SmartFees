@@ -22,17 +22,20 @@ class AdminController extends Controller
         
         $query = FeeStructure::with(['course', 'semester']);
         
-        // Apply filters
+        // Apply filters with validation
         if ($request->filled('course_id')) {
-            $query->where('course_id', $request->course_id);
+            $query->where('course_id', (int) $request->course_id);
         }
         
         if ($request->filled('semester_id')) {
-            $query->where('semester_id', $request->semester_id);
+            $query->where('semester_id', (int) $request->semester_id);
         }
         
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $allowedStatuses = ['active', 'inactive', 'archived'];
+            if (in_array($request->status, $allowedStatuses)) {
+                $query->where('status', $request->status);
+            }
         }
 
         $feeStructures = $query->latest()->paginate(15)->withQueryString();

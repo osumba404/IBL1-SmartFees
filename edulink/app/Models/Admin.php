@@ -56,7 +56,7 @@ class Admin extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password' => config('auth.password_cast', 'hashed'),
             'hire_date' => 'date',
             'last_login_at' => 'datetime',
             'locked_until' => 'datetime',
@@ -84,7 +84,7 @@ class Admin extends Authenticatable
      */
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'super_admin';
+        return $this->role === config('auth.admin_roles.super_admin', 'super_admin');
     }
 
     /**
@@ -230,16 +230,17 @@ class Admin extends Authenticatable
      */
     public static function generateAdminId(): string
     {
+        $prefix = config('auth.admin_id_prefix', 'ADM');
         $lastAdmin = self::orderBy('admin_id', 'desc')->first();
         
         if ($lastAdmin) {
-            $lastNumber = (int) substr($lastAdmin->admin_id, 3);
+            $lastNumber = (int) substr($lastAdmin->admin_id, strlen($prefix));
             $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
         } else {
             $newNumber = '001';
         }
 
-        return "ADM{$newNumber}";
+        return "{$prefix}{$newNumber}";
     }
 
     /**
@@ -247,8 +248,15 @@ class Admin extends Authenticatable
      */
     public function setDefaultPermissions(): void
     {
+        $roles = config('auth.admin_roles', [
+            'super_admin' => 'super_admin',
+            'finance_officer' => 'finance_officer',
+            'registrar' => 'registrar',
+            'academic_officer' => 'academic_officer'
+        ]);
+        
         $permissions = match($this->role) {
-            'super_admin' => [
+            $roles['super_admin'] => [
                 'can_manage_students' => true,
                 'can_manage_courses' => true,
                 'can_manage_fees' => true,
@@ -257,7 +265,7 @@ class Admin extends Authenticatable
                 'can_generate_reports' => true,
                 'can_manage_admins' => true,
             ],
-            'finance_officer' => [
+            $roles['finance_officer'] => [
                 'can_manage_students' => false,
                 'can_manage_courses' => false,
                 'can_manage_fees' => true,
@@ -266,7 +274,7 @@ class Admin extends Authenticatable
                 'can_generate_reports' => true,
                 'can_manage_admins' => false,
             ],
-            'registrar' => [
+            $roles['registrar'] => [
                 'can_manage_students' => true,
                 'can_manage_courses' => true,
                 'can_manage_fees' => false,
@@ -275,7 +283,7 @@ class Admin extends Authenticatable
                 'can_generate_reports' => true,
                 'can_manage_admins' => false,
             ],
-            'academic_officer' => [
+            $roles['academic_officer'] => [
                 'can_manage_students' => true,
                 'can_manage_courses' => true,
                 'can_manage_fees' => false,

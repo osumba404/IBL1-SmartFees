@@ -91,13 +91,23 @@ class StudentAuthController extends Controller
             $credentials['student_id'] = $request->login;
         }
         
-        // Add status check to credentials to ensure only active students can login
-        $credentials['status'] = 'active';
-        
         if (Auth::guard('student')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $student = Auth::guard('student')->user();
+            
+            // Check if student account is active after authentication
+            if ($student->status !== 'active') {
+                Auth::guard('student')->logout();
+                
+                $statusMessage = match($student->status) {
+                    'suspended' => 'Your account has been suspended. Please contact administration.',
+                    'inactive' => 'Your account is inactive. Please contact administration.',
+                    default => 'Your account status does not allow login. Please contact administration.'
+                };
+                
+                return back()->withErrors(['login' => $statusMessage])->onlyInput('login');
+            }
             
             // Update last login
             $student->update(['last_login_at' => now()]);
@@ -105,36 +115,8 @@ class StudentAuthController extends Controller
             return redirect()->intended(route('student.dashboard'));
         }
 
-        // Check if student exists but has wrong status
-        $student = null;
-        if ($isEmail) {
-            $student = \App\Models\Student::where('email', $request->login)->first();
-        } else {
-            $student = \App\Models\Student::where('student_id', $request->login)->first();
-        }
-        
-        if ($student) {
-            if ($student->status === 'suspended') {
-                return back()->withErrors([
-                    'login' => 'Your account has been suspended. Please contact administration.',
-                ])->onlyInput('login');
-            }
-            
-            if ($student->status === 'inactive') {
-                return back()->withErrors([
-                    'login' => 'Your account is inactive. Please contact administration.',
-                ])->onlyInput('login');
-            }
-            
-            // Student exists but password is wrong
-            return back()->withErrors([
-                'login' => 'The provided credentials do not match our records.',
-            ])->onlyInput('login');
-        }
-
-        // Student doesn't exist
         return back()->withErrors([
-            'login' => 'No account found with these credentials.',
+            'login' => 'The provided credentials do not match our records.',
         ])->onlyInput('login');
     }
 

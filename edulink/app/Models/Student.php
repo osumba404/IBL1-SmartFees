@@ -64,7 +64,7 @@ class Student extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password' => config('auth.password_cast', 'hashed'),
             'date_of_birth' => 'date',
             'enrollment_date' => 'date',
             'expected_graduation_date' => 'date',
