@@ -23,8 +23,10 @@ class Payment extends Model
         'student_id',
         'student_enrollment_id',
         'payment_reference',
+        'transaction_reference',
         'transaction_id',
         'receipt_number',
+        'payment_details',
         'amount',
         'currency',
         'payment_method',
@@ -104,6 +106,14 @@ class Payment extends Model
      * Get the enrollment for this payment.
      */
     public function enrollment(): BelongsTo
+    {
+        return $this->belongsTo(StudentEnrollment::class, 'student_enrollment_id');
+    }
+    
+    /**
+     * Get the student enrollment for this payment.
+     */
+    public function studentEnrollment(): BelongsTo
     {
         return $this->belongsTo(StudentEnrollment::class, 'student_enrollment_id');
     }

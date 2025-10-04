@@ -249,19 +249,25 @@
             <div class="success-details">
                 <div class="detail-row">
                     <span class="detail-label">Transaction ID</span>
-                    <span class="detail-value">#{{ strtoupper(uniqid()) }}</span>
+                    <span class="detail-value" id="transaction-id">#{{ session('payment_id', strtoupper(uniqid())) }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Amount Paid</span>
-                    <span class="detail-value">KSh 1,000.00</span>
+                    <span class="detail-value" id="amount-paid">KSh {{ number_format(session('payment_amount', 1000), 2) }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Payment Method</span>
-                    <span class="detail-value">M-Pesa</span>
+                    <span class="detail-value" id="payment-method">{{ ucfirst(session('payment_method', 'M-Pesa')) }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Date & Time</span>
-                    <span class="detail-value">{{ now()->format('M d, Y - H:i') }}</span>
+                    <span class="detail-value" id="payment-date">{{ now()->format('M d, Y - H:i') }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value text-success">
+                        <i class="bi bi-check-circle-fill me-1"></i>Completed
+                    </span>
                 </div>
             </div>
             
@@ -304,7 +310,32 @@
         }
         
         // Start confetti when page loads
-        window.addEventListener('load', createConfetti);
+        window.addEventListener('load', function() {
+            createConfetti();
+            
+            // Check for completed payment data from pending page
+            const completedPayment = sessionStorage.getItem('completed_payment');
+            if (completedPayment) {
+                const paymentData = JSON.parse(completedPayment);
+                
+                // Update the display with actual payment data
+                if (paymentData.transaction_id) {
+                    document.getElementById('transaction-id').textContent = '#' + paymentData.transaction_id;
+                }
+                if (paymentData.amount) {
+                    document.getElementById('amount-paid').textContent = 'KSh ' + parseFloat(paymentData.amount).toLocaleString('en-US', {minimumFractionDigits: 2});
+                }
+                if (paymentData.method) {
+                    document.getElementById('payment-method').textContent = paymentData.method;
+                }
+                if (paymentData.date) {
+                    document.getElementById('payment-date').textContent = paymentData.date;
+                }
+                
+                // Clear the session storage
+                sessionStorage.removeItem('completed_payment');
+            }
+        });
     </script>
 </body>
 </html>

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\ReportController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return redirect()->route('admin.login');
@@ -277,3 +278,8 @@ Route::get('/test-public', function() {
 
 // Include payment routes
 require __DIR__.'/payment.php';
+
+// M-Pesa webhook routes (no middleware needed)
+Route::post('/webhooks/mpesa', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('webhooks.mpesa');
+Route::post('/webhooks/mpesa/timeout', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('webhooks.mpesa.timeout');
+Route::post('/webhooks/mpesa/result', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('webhooks.mpesa.result');

@@ -1,28 +1,17 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\PaymentController;
 
-// Direct payment routes without middleware complications
-Route::get('/payment', function() {
-    $student = Auth::guard('student')->user();
-    if (!$student) {
-        return redirect()->route('student.login');
-    }
-    
-    $enrollment = $student->enrollments()->with(['course', 'semester'])->first();
-    
-    return view('payment.create', compact('student', 'enrollment'));
-})->name('payment.create');
+// Payment routes
+Route::middleware('auth:student')->group(function () {
+    Route::get('/payment', [PaymentController::class, 'create'])->name('payment.create');
+    Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process');
+    Route::get('/payment/pending/{paymentId}', [PaymentController::class, 'pending'])->name('payment.pending');
+    Route::get('/payment/status/{paymentId}', [PaymentController::class, 'status'])->name('payment.status');
+    Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
+    Route::get('/simulate-payment/{paymentId}', [PaymentController::class, 'simulate'])->name('simulate.payment');
+});
 
-Route::post('/payment/process', function() {
-    return redirect('/payment/success')->with('success', 'Payment initiated successfully');
-})->name('payment.process');
-
-Route::get('/payment/success', function() {
-    return view('payment.success');
-})->name('payment.success');
-
-Route::get('/payment/cancel', function() {
-    return view('payment.cancel');
-})->name('payment.cancel');
+// Webhook routes (no auth needed)
+Route::post('/webhooks/mpesa', [PaymentController::class, 'callback'])->name('webhooks.mpesa');

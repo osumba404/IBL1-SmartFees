@@ -533,13 +533,49 @@
             });
             
             // Form submission with loading state
-            paymentForm.addEventListener('submit', function() {
+            paymentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
                 const btnText = payButton.querySelector('.btn-text');
                 const loading = payButton.querySelector('.loading');
+                const formData = new FormData(this);
                 
                 btnText.style.display = 'none';
                 loading.classList.add('show');
                 payButton.disabled = true;
+                
+                // For M-Pesa, use AJAX to handle STK Push
+                if (formData.get('payment_method') === 'mpesa') {
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Redirect to pending page
+                            window.location.href = data.redirect_url;
+                        } else {
+                            alert(data.message || 'Payment failed. Please try again.');
+                            btnText.style.display = 'inline';
+                            loading.classList.remove('show');
+                            payButton.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Payment failed. Please try again.');
+                        btnText.style.display = 'inline';
+                        loading.classList.remove('show');
+                        payButton.disabled = false;
+                    });
+                } else {
+                    // For other payment methods, submit normally
+                    this.submit();
+                }
             });
             
             // Amount input formatting
