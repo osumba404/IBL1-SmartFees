@@ -82,12 +82,16 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('/payments/cancel', [StudentPaymentController::class, 'paymentCancel'])->name('payments.cancel');
         // Route moved above to avoid dependency issues
         
-        // Simple payment route without dependencies
-        Route::get('/payments/create', function() {
-            $student = Auth::guard('student')->user();
-            $enrollment = null; // For now
-            return view('student.payments.create', compact('enrollment', 'student'));
-        })->name('payments.create');
+        // Test route
+        Route::get('/test-payment', function() {
+            return 'Payment route works!';
+        });
+        
+        // Payment routes
+        Route::get('/payments/create', [StudentPaymentController::class, 'create'])->name('payments.create');
+        Route::post('/payments/initiate', [StudentPaymentController::class, 'initiate'])->name('payments.initiate');
+        Route::get('/payments/success', [StudentPaymentController::class, 'success'])->name('payments.success');
+        Route::get('/payments/cancel', [StudentPaymentController::class, 'cancel'])->name('payments.cancel');
         
         // Test route without middleware
         Route::get('/test-payment', function() {
@@ -255,6 +259,7 @@ Route::get('/login', function () {
 // Public webhook routes (no authentication required)
 Route::post('/webhooks/mpesa', [StudentPaymentController::class, 'mpesaCallback'])->name('webhooks.mpesa');
 Route::post('/webhooks/stripe', [StudentPaymentController::class, 'stripeWebhook'])->name('webhooks.stripe');
+Route::post('/webhooks/paypal', [StudentPaymentController::class, 'paypalWebhook'])->name('webhooks.paypal');
 
 // Legal pages
 Route::get('/privacy-policy', function () {
@@ -269,3 +274,6 @@ Route::get('/terms-of-service', function () {
 Route::get('/test-public', function() {
     return 'Public route works!';
 });
+
+// Include payment routes
+require __DIR__.'/payment.php';

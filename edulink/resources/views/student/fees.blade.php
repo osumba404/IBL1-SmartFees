@@ -264,14 +264,14 @@
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-sm-6 mb-3">
-                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
+                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('payment.create') }}'" style="cursor: pointer;">
                                 <i class="bi bi-phone fs-1 text-success mb-2"></i>
                                 <div class="fw-bold">M-Pesa</div>
                                 <div class="text-muted small">Mobile Money</div>
                             </div>
                         </div>
                         <div class="col-sm-6 mb-3">
-                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
+                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('payment.create') }}'" style="cursor: pointer;">
                                 <i class="bi bi-credit-card fs-1 text-primary mb-2"></i>
                                 <div class="fw-bold">Card Payment</div>
                                 <div class="text-muted small">Visa, Mastercard</div>
@@ -425,7 +425,7 @@
 // function initiatePayment(enrollmentId) {
 //     document.getElementById('enrollmentId').value = enrollmentId;
 function initiatePayment(enrollmentId) {
-    window.location.href = '{{ route("student.payments.create") }}?enrollment=' + enrollmentId;
+    window.location.href = '{{ route("payment.create") }}?enrollment=' + enrollmentId;
 }
 //     new bootstrap.Modal(document.getElementById('paymentModal')).show();
 // }

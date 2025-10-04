@@ -95,7 +95,7 @@
                             <span class="text-danger">Some payments are overdue.</span>
                         @endif
                     </div>
-                    <a href="#" class="btn btn-warning btn-sm ms-3">Make Payment</a>
+                    <a href="{{ route('payment.create') }}" class="btn btn-warning btn-sm ms-3">Make Payment</a>
                 </div>
             </div>
         </div>
@@ -156,7 +156,7 @@
                         <div class="text-center py-4">
                             <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
                             <p class="text-muted">No payments recorded yet.</p>
-                            <a href="#" class="btn btn-primary">Make Your First Payment</a>
+                            <a href="{{ route('payment.create') }}" class="btn btn-primary">Make Your First Payment</a>
                         </div>
                     @endif
                 </div>
@@ -171,7 +171,7 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="#" class="btn btn-primary">
+                        <a href="{{ route('payment.create') }}" class="btn btn-primary">
                             <i class="fas fa-credit-card me-2"></i>Make Payment
                         </a>
                         <a href="#" class="btn btn-outline-primary">
@@ -195,13 +195,13 @@
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-6 mb-3">
-                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
+                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('payment.create') }}'" style="cursor: pointer;">
                                 <i class="fas fa-mobile-alt fa-2x text-success mb-2"></i>
                                 <div class="small">M-Pesa</div>
                             </div>
                         </div>
                         <div class="col-6 mb-3">
-                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
+                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('payment.create') }}'" style="cursor: pointer;">
                                 <i class="fab fa-cc-visa fa-2x text-primary mb-2"></i>
                                 <div class="small">Card</div>
                             </div>

@@ -5,26 +5,19 @@
 @section('content')
 <div class="container-fluid">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-6">
             <div class="card">
-                <div class="card-body text-center py-5">
-                    <div class="mb-4">
-                        <i class="bi bi-x-circle-fill text-warning" style="font-size: 4rem;"></i>
-                    </div>
+                <div class="card-body text-center">
+                    <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                    <h3 class="mt-3">Payment Cancelled</h3>
+                    <p class="text-muted">Your payment was cancelled or failed to process.</p>
                     
-                    <h2 class="text-warning mb-3">Payment Cancelled</h2>
-                    
-                    <p class="lead mb-4">
-                        Your payment was cancelled or could not be completed. 
-                        No charges have been made to your account.
-                    </p>
-                    
-                    <div class="d-flex justify-content-center gap-3">
+                    <div class="mt-4">
                         <a href="{{ route('student.payments.create') }}" class="btn btn-primary">
-                            <i class="bi bi-arrow-clockwise me-2"></i>Try Again
+                            Try Again
                         </a>
-                        <a href="{{ route('student.dashboard') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-house me-2"></i>Back to Dashboard
+                        <a href="{{ route('student.dashboard') }}" class="btn btn-outline-primary">
+                            Back to Dashboard
                         </a>
                     </div>
                 </div>

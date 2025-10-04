@@ -76,6 +76,12 @@ return [
         'currency' => env('STRIPE_CURRENCY', 'usd'),
     ],
 
+    'paypal' => [
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET'),
+        'sandbox' => env('PAYPAL_SANDBOX', true),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Payment Methods Configuration
