@@ -90,25 +90,39 @@ class AdminAuthController extends Controller
             ->get();
         $overdueAmount = $overdueEnrollments->sum('outstanding_balance');
         
-        $stats = [
-            'total_students' => Student::count(),
-            'active_students' => Student::where('status', 'active')->count(),
-            'pending_students' => Student::where('status', 'pending_verification')->count(),
-            'suspended_students' => Student::where('status', 'suspended')->count(),
-            'new_students_this_month' => Student::whereYear('created_at', $currentMonth->year)
+        $stats = [];
+        
+        if ($admin->canManageStudents()) {
+            $stats['total_students'] = Student::count();
+            $stats['active_students'] = Student::where('status', 'active')->count();
+            $stats['pending_students'] = Student::where('status', 'pending_verification')->count();
+            $stats['suspended_students'] = Student::where('status', 'suspended')->count();
+            $stats['new_students_this_month'] = Student::whereYear('created_at', $currentMonth->year)
                 ->whereMonth('created_at', $currentMonth->month)
-                ->count(),
-            'total_courses' => Course::count(),
-            'active_courses' => Course::where('is_active', true)->count(),
-            'total_semesters' => Semester::count(),
-            'active_semesters' => Semester::where('status', 'active')->count(),
-            'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
-            'total_outstanding' => $totalOutstanding,
-            'pending_payments' => Payment::where('status', 'pending')->count(),
-            'pending_amount' => Payment::where('status', 'pending')->sum('amount'),
-            'overdue_payments' => $overdueEnrollments->count(),
-            'overdue_amount' => $overdueAmount,
-        ];
+                ->count();
+        }
+        
+        if ($admin->canManageCourses()) {
+            $stats['total_courses'] = Course::count();
+            $stats['active_courses'] = Course::where('is_active', true)->count();
+            $stats['total_semesters'] = Semester::count();
+            $stats['active_semesters'] = Semester::where('status', 'active')->count();
+        }
+        
+        if ($admin->canManagePayments() || $admin->canViewReports()) {
+            $stats['total_revenue'] = Payment::where('status', 'completed')->sum('amount');
+        }
+        
+        if ($admin->canManagePayments() || $admin->canManageFees()) {
+            $stats['total_outstanding'] = $totalOutstanding;
+            $stats['pending_payments'] = Payment::where('status', 'pending')->count();
+            $stats['pending_amount'] = Payment::where('status', 'pending')->sum('amount');
+        }
+        
+        if ($admin->canManagePayments()) {
+            $stats['overdue_payments'] = $overdueEnrollments->count();
+            $stats['overdue_amount'] = $overdueAmount;
+        }
 
         // Calculate revenue growth percentage
         $currentMonthRevenue = Payment::where('status', 'completed')
@@ -134,16 +148,22 @@ class AdminAuthController extends Controller
             'recent_payments_count' => Payment::where('created_at', '>=', now()->subDays(7))->count(),
         ];
 
-        // Recent activities
-        $recentPayments = Payment::with(['student', 'enrollment.course'])
-            ->latest()
-            ->take(10)
-            ->get();
+        // Recent activities based on permissions
+        $recentPayments = collect();
+        if ($admin->canManagePayments()) {
+            $recentPayments = Payment::with(['student', 'enrollment.course'])
+                ->latest()
+                ->take(10)
+                ->get();
+        }
 
-        $recentStudents = Student::with('activeEnrollments.course')
-            ->latest()
-            ->take(5)
-            ->get();
+        $recentStudents = collect();
+        if ($admin->canManageStudents()) {
+            $recentStudents = Student::with('activeEnrollments.course')
+                ->latest()
+                ->take(5)
+                ->get();
+        }
 
         // Pending approvals (if admin has permission)
         $pendingApprovals = [];
@@ -194,7 +214,7 @@ class AdminAuthController extends Controller
         $alerts = collect();
         
         // Add alert for pending student approvals
-        if ($admin->can_approve_students && $stats['pending_students'] > 0) {
+        if ($admin->can_approve_students && isset($stats['pending_students']) && $stats['pending_students'] > 0) {
             $alerts->push([
                 'type' => 'warning',
                 'icon' => 'exclamation-triangle',
@@ -204,7 +224,7 @@ class AdminAuthController extends Controller
         }
         
         // Add alert for overdue payments
-        if ($stats['overdue_payments'] > 0) {
+        if (isset($stats['overdue_payments']) && $stats['overdue_payments'] > 0) {
             $alerts->push([
                 'type' => 'danger',
                 'icon' => 'clock-history',

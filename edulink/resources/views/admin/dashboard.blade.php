@@ -10,6 +10,7 @@
 
 <!-- Statistics Cards -->
 <div class="row mb-4">
+    @if($admin->canManageStudents())
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="stats-card">
             <div class="stats-value">{{ number_format($stats['total_students']) }}</div>
@@ -22,7 +23,9 @@
             </div>
         </div>
     </div>
+    @endif
     
+    @if($admin->canManagePayments() || $admin->canViewReports())
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="stats-card success">
             <div class="stats-value">KSh {{ number_format($stats['total_revenue'], 2) }}</div>
@@ -35,7 +38,9 @@
             </div>
         </div>
     </div>
+    @endif
     
+    @if($admin->canManagePayments() || $admin->canManageFees())
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="stats-card warning">
             <div class="stats-value">KSh {{ number_format($stats['total_outstanding'], 2) }}</div>
@@ -47,7 +52,9 @@
             </div>
         </div>
     </div>
+    @endif
     
+    @if($admin->canManagePayments())
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="stats-card danger">
             <div class="stats-value">{{ number_format($stats['overdue_payments']) }}</div>
@@ -59,10 +66,13 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 
+@if($admin->canViewReports() || $admin->canManagePayments())
 <!-- Charts Row -->
 <div class="row mb-4">
+    @if($admin->canViewReports())
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -83,8 +93,10 @@
             </div>
         </div>
     </div>
+    @endif
     
-    <div class="col-lg-4">
+    @if($admin->canManagePayments())
+    <div class="{{ $admin->canViewReports() ? 'col-lg-4' : 'col-lg-12' }}">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Payment Methods</h5>
@@ -94,10 +106,13 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
+@endif
 
 <!-- Recent Activity and Quick Actions -->
 <div class="row">
+    @if($admin->canManagePayments())
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -187,8 +202,9 @@
             </div>
         </div>
     </div>
+    @endif
     
-    <div class="col-lg-4">
+    <div class="{{ $admin->canManagePayments() ? 'col-lg-4' : 'col-lg-12' }}">
         <!-- Quick Actions -->
         <div class="card mb-4">
             <div class="card-header">
@@ -196,18 +212,29 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
+                    @if($admin->canManageStudents())
                     <a href="{{ route('admin.students.create') }}" class="btn btn-primary">
                         <i class="bi bi-person-plus me-2"></i>Add New Student
                     </a>
+                    @endif
+                    @if($admin->canManageCourses())
                     <a href="{{ route('admin.courses.create') }}" class="btn btn-outline-primary">
                         <i class="bi bi-book me-2"></i>Create Course
                     </a>
                     <a href="{{ route('admin.semesters.create') }}" class="btn btn-outline-primary">
                         <i class="bi bi-calendar-plus me-2"></i>Add Semester
                     </a>
+                    @endif
+                    @if($admin->canManageFees())
                     <a href="{{ route('admin.fee-structures.create') }}" class="btn btn-outline-primary">
                         <i class="bi bi-currency-dollar me-2"></i>Set Fee Structure
                     </a>
+                    @endif
+                    @if($admin->canManagePayments())
+                    <a href="{{ route('admin.payments.create') }}" class="btn btn-outline-success">
+                        <i class="bi bi-plus-circle me-2"></i>Record Payment
+                    </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -265,9 +292,12 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    let revenueChart = new Chart(revenueCtx, {
+    // Revenue Chart (only if element exists)
+    const revenueCanvas = document.getElementById('revenueChart');
+    let revenueChart = null;
+    if (revenueCanvas) {
+        const revenueCtx = revenueCanvas.getContext('2d');
+        revenueChart = new Chart(revenueCtx, {
         type: 'line',
         data: {
             labels: @json($chartData['revenue']['labels']),
@@ -307,10 +337,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    }
 
-    // Payment Methods Chart
-    const paymentMethodsCtx = document.getElementById('paymentMethodsChart').getContext('2d');
-    new Chart(paymentMethodsCtx, {
+    // Payment Methods Chart (only if element exists)
+    const paymentMethodsCanvas = document.getElementById('paymentMethodsChart');
+    if (paymentMethodsCanvas) {
+        const paymentMethodsCtx = paymentMethodsCanvas.getContext('2d');
+        new Chart(paymentMethodsCtx, {
         type: 'doughnut',
         data: {
             labels: @json($chartData['paymentMethods']['labels']),
@@ -339,16 +372,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    }
 
-    // Revenue chart period toggle
-    document.querySelectorAll('input[name="revenueChart"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            const period = this.id.replace('revenue', '');
-            updateRevenueChart(period);
+    // Revenue chart period toggle (only if chart exists)
+    if (revenueChart) {
+        document.querySelectorAll('input[name="revenueChart"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const period = this.id.replace('revenue', '');
+                updateRevenueChart(period);
+            });
         });
-    });
+    }
 
     function updateRevenueChart(period) {
+        if (!revenueChart) return;
+        
         // Show loading state
         revenueChart.data.labels = ['Loading...'];
         revenueChart.data.datasets[0].data = [0];

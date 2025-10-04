@@ -315,6 +315,7 @@
                     </a>
                 </li>
                 
+                @if($admin->canManageStudents())
                 <div class="nav-section">Student Management</div>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.students.*') ? 'active' : '' }}" 
@@ -323,7 +324,9 @@
                         Students
                     </a>
                 </li>
+                @endif
                 
+                @if($admin->canManageCourses())
                 <div class="nav-section">Academic Management</div>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.courses.*') ? 'active' : '' }}" 
@@ -339,8 +342,11 @@
                         Semesters
                     </a>
                 </li>
+                @endif
                 
+                @if($admin->canManageFees() || $admin->canManagePayments())
                 <div class="nav-section">Financial Management</div>
+                @if($admin->canManageFees())
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.fee-structures.*') ? 'active' : '' }}" 
                        href="{{ route('admin.fee-structures.index') }}">
@@ -348,6 +354,8 @@
                         Fee Structures
                     </a>
                 </li>
+                @endif
+                @if($admin->canManagePayments())
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : '' }}" 
                        href="{{ route('admin.payments.index') }}">
@@ -355,7 +363,10 @@
                         Payments
                     </a>
                 </li>
+                @endif
+                @endif
                 
+                @if($admin->canViewReports())
                 <div class="nav-section">Reports & Analytics</div>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" 
@@ -364,8 +375,9 @@
                         Reports
                     </a>
                 </li>
+                @endif
                 
-                @if($admin->super_admin)
+                @if($admin->isSuperAdmin())
                 <div class="nav-section">System Administration</div>
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}" 
@@ -399,7 +411,7 @@
                     <button class="btn btn-link dropdown-toggle d-flex align-items-center" 
                             type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle me-2 fs-5"></i>
-                        <span>{{ $admin->first_name }} {{ $admin->last_name }}</span>
+                        <span>{{ $admin->name }}</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><h6 class="dropdown-header">{{ $admin->email }}</h6></li>

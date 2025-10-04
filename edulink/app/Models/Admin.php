@@ -124,35 +124,19 @@ class Admin extends Authenticatable
     }
 
     /**
-     * Check if admin can view payments.
+     * Check if admin can manage payments.
      */
-    public function canViewPayments(): bool
+    public function canManagePayments(): bool
     {
-        return $this->hasPermission('can_view_payments');
+        return $this->hasPermission('can_manage_payments');
     }
 
     /**
-     * Check if admin can process payments.
+     * Check if admin can view reports.
      */
-    public function canProcessPayments(): bool
+    public function canViewReports(): bool
     {
-        return $this->hasPermission('can_process_payments');
-    }
-
-    /**
-     * Check if admin can generate reports.
-     */
-    public function canGenerateReports(): bool
-    {
-        return $this->hasPermission('can_generate_reports');
-    }
-
-    /**
-     * Check if admin can manage other admins.
-     */
-    public function canManageAdmins(): bool
-    {
-        return $this->hasPermission('can_manage_admins');
+        return $this->hasPermission('can_view_reports');
     }
 
     /**
