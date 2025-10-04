@@ -312,7 +312,7 @@ class AdminAuthController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->is_super_admin) {
+        if (!$admin->isSuperAdmin()) {
             abort(403, 'Access denied. Super Admin privileges required.');
         }
 
@@ -333,7 +333,7 @@ class AdminAuthController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->is_super_admin) {
+        if (!$admin->isSuperAdmin()) {
             abort(403, 'Access denied. Super Admin privileges required.');
         }
 
@@ -349,7 +349,7 @@ class AdminAuthController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->is_super_admin) {
+        if (!$admin->isSuperAdmin()) {
             abort(403, 'Access denied. Super Admin privileges required.');
         }
 
@@ -370,7 +370,7 @@ class AdminAuthController extends Controller
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => $request->role,
-            'is_super_admin' => $request->role === 'super_admin',
+
             'can_manage_students' => in_array('manage_students', $request->permissions ?? []),
             'can_manage_courses' => in_array('manage_courses', $request->permissions ?? []),
             'can_manage_payments' => in_array('manage_payments', $request->permissions ?? []),
@@ -390,7 +390,7 @@ class AdminAuthController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->is_super_admin) {
+        if (!$admin->isSuperAdmin()) {
             abort(403, 'Access denied. Super Admin privileges required.');
         }
 

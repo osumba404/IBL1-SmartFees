@@ -37,7 +37,7 @@ class AdminAuth
             foreach ($permissions as $permission) {
                 switch ($permission) {
                     case 'super_admin':
-                        $hasPermission = $admin->isSuperAdmin();
+                        $hasPermission = $admin->role === 'super_admin';
                         break;
                     case 'manage_students':
                         $hasPermission = $admin->can_manage_students || $admin->isSuperAdmin();
