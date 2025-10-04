@@ -76,10 +76,10 @@
                             <h6>Fee Information</h6>
                             @if($currentEnrollment->feeStructure)
                                 <p><strong>Total Fee:</strong> KES {{ number_format($currentEnrollment->feeStructure->total_amount, 2) }}</p>
-                                <p><strong>Amount Paid:</strong> KES {{ number_format($currentEnrollment->amount_paid ?? 0, 2) }}</p>
+                                <p><strong>Amount Paid:</strong> KES {{ number_format($currentEnrollment->fees_paid ?? 0, 2) }}</p>
                                 <p><strong>Outstanding:</strong> 
-                                    <span class="text-{{ ($currentEnrollment->amount_pending ?? 0) > 0 ? 'danger' : 'success' }}">
-                                        KES {{ number_format($currentEnrollment->amount_pending ?? 0, 2) }}
+                                    <span class="text-{{ $currentEnrollment->outstanding_balance > 0 ? 'danger' : 'success' }}">
+                                        KES {{ number_format($currentEnrollment->outstanding_balance, 2) }}
                                     </span>
                                 </p>
                                 @if($currentEnrollment->feeStructure->due_date)
@@ -91,7 +91,7 @@
                         </div>
                     </div>
                     
-                    @if(($currentEnrollment->amount_pending ?? 0) > 0)
+                    @if($currentEnrollment->outstanding_balance > 0)
                     <div class="row mt-3">
                         <div class="col-12">
                             <div class="d-flex gap-2">
@@ -152,20 +152,16 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @if($enrollment->feeStructure)
-                                                    KES {{ number_format($enrollment->feeStructure->total_amount, 2) }}
-                                                @else
-                                                    <span class="text-muted">N/A</span>
-                                                @endif
+                                                KES {{ number_format($enrollment->total_fees_due, 2) }}
                                             </td>
                                             <td>
                                                 <span class="text-success">
-                                                    KES {{ number_format($enrollment->amount_paid ?? 0, 2) }}
+                                                    KES {{ number_format($enrollment->fees_paid, 2) }}
                                                 </span>
                                             </td>
                                             <td>
-                                                <span class="text-{{ ($enrollment->amount_pending ?? 0) > 0 ? 'danger' : 'success' }}">
-                                                    KES {{ number_format($enrollment->amount_pending ?? 0, 2) }}
+                                                <span class="text-{{ $enrollment->outstanding_balance > 0 ? 'danger' : 'success' }}">
+                                                    KES {{ number_format($enrollment->outstanding_balance, 2) }}
                                                 </span>
                                             </td>
                                             <td>
@@ -175,7 +171,7 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    @if(($enrollment->amount_pending ?? 0) > 0)
+                                                    @if($enrollment->outstanding_balance > 0)
                                                         <button class="btn btn-primary btn-sm" onclick="initiatePayment({{ $enrollment->id }})">
                                                             Pay Now
                                                         </button>
@@ -217,14 +213,14 @@
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-6 mb-3">
-                            <div class="p-3 border rounded">
+                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
                                 <i class="bi bi-phone fa-2x text-success mb-2"></i>
                                 <div class="small"><strong>M-Pesa</strong></div>
                                 <div class="text-muted small">Mobile Money</div>
                             </div>
                         </div>
                         <div class="col-6 mb-3">
-                            <div class="p-3 border rounded">
+                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
                                 <i class="bi bi-credit-card fa-2x text-primary mb-2"></i>
                                 <div class="small"><strong>Card Payment</strong></div>
                                 <div class="text-muted small">Visa, Mastercard</div>
@@ -356,6 +352,22 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.payment-method-card {
+    transition: all 0.3s ease;
+    border: 2px solid #dee2e6 !important;
+}
+
+.payment-method-card:hover {
+    border-color: #007bff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background-color: #f8f9ff;
+}
+</style>
+@endpush
 
 @push('scripts')
 <script>

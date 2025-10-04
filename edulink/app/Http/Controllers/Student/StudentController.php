@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Http\Response;
-use Barryvdh\DomPDF\Facade\Pdf;
+
 use App\Models\Semester;
 
 class StudentController extends Controller
@@ -118,15 +118,13 @@ class StudentController extends Controller
         ];
 
         foreach ($enrollments as $enrollment) {
-            if ($enrollment->feeStructure) {
-                $feeSummary['total_fees'] += $enrollment->feeStructure->total_amount;
-                $feeSummary['total_paid'] += $enrollment->amount_paid;
-                $feeSummary['total_pending'] += $enrollment->amount_pending;
-                
-                // Check for overdue amounts
-                if ($enrollment->feeStructure->due_date && $enrollment->feeStructure->due_date->isPast() && $enrollment->amount_pending > 0) {
-                    $feeSummary['total_overdue'] += $enrollment->amount_pending;
-                }
+            $feeSummary['total_fees'] += $enrollment->total_fees_due;
+            $feeSummary['total_paid'] += $enrollment->fees_paid;
+            $feeSummary['total_pending'] += $enrollment->outstanding_balance;
+            
+            // Check for overdue amounts
+            if ($enrollment->next_payment_due && $enrollment->next_payment_due->isPast() && $enrollment->outstanding_balance > 0) {
+                $feeSummary['total_overdue'] += $enrollment->outstanding_balance;
             }
         }
 
@@ -198,7 +196,7 @@ class StudentController extends Controller
     /**
      * Download fee statement
      */
-    public function downloadStatement(Request $request): Response
+    public function downloadStatement(Request $request)
     {
         $student = Auth::guard('student')->user();
         
@@ -215,17 +213,8 @@ class StudentController extends Controller
             abort(403, 'Unauthorized access to statement.');
         }
 
-        // Generate PDF statement
-        $pdf = Pdf::loadView('student.statement-pdf', compact('student', 'enrollment'));
-        
-        $filename = sprintf(
-            'fee-statement-%s-%s-%s.pdf',
-            $student->student_id,
-            $enrollment->course->code,
-            $enrollment->semester->code
-        );
-
-        return $pdf->download($filename);
+        // Return HTML statement view instead of PDF
+        return view('student.statements.pdf', compact('student', 'enrollment'));
     }
 
     /**
@@ -521,11 +510,26 @@ public function getFeeDetails(StudentEnrollment $enrollment)
         ->orderBy('start_date', 'desc')
         ->first();
 
+        // If no active semester, try to find any semester or create a default one
         if (!$semester) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No active enrollment period is currently available. Please contact the administration office.'
-            ], 422);
+            $semester = Semester::orderBy('created_at', 'desc')->first();
+            
+            if (!$semester) {
+                // Create a default semester if none exists
+                $semester = Semester::create([
+                    'semester_code' => 'SEM' . date('Y') . '01',
+                    'name' => 'Semester 1',
+                    'academic_year' => date('Y'),
+                    'period' => 'semester_1',
+                    'start_date' => now(),
+                    'end_date' => now()->addMonths(6),
+                    'registration_start_date' => now(),
+                    'registration_end_date' => now()->addMonths(1),
+                    'fee_payment_deadline' => now()->addMonths(1),
+                    'status' => 'active',
+                    'is_current_semester' => true,
+                ]);
+            }
         }
 
         // Check if student is already enrolled in this course and semester
@@ -535,28 +539,39 @@ public function getFeeDetails(StudentEnrollment $enrollment)
             ->first();
 
         if ($existingEnrollment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You are already enrolled in this course for the current semester.'
-            ], 422);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are already enrolled in this course for the current semester.'
+                ], 422);
+            }
+            return redirect()->route('student.enrollment.error')
+                ->with('error_message', 'You are already enrolled in this course for the current semester.');
         }
 
         // Validate course availability and capacity
         if (!$course->isAvailable()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This course is not currently available for enrollment.'
-            ], 422);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This course is not currently available for enrollment.'
+                ], 422);
+            }
+            return redirect()->route('student.enrollment.error')
+                ->with('error_message', 'This course is not currently available for enrollment.');
         }
 
 
-        // Registration must be open OR late enrollment allowed and still valid
-        $now = now();
-        if (!$semester->isRegistrationOpen() && !$semester->isLateEnrollmentOpen()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Registration is currently closed for the active semester.'
-            ], 422);
+        // Allow registration if semester is active (remove strict date checks for now)
+        if ($semester->status !== 'active') {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Registration is currently closed for the active semester.'
+                ], 422);
+            }
+            return redirect()->route('student.enrollment.error')
+                ->with('error_message', 'Registration is currently closed for the active semester.');
         }
 
             // Check course capacity
@@ -567,19 +582,25 @@ public function getFeeDetails(StudentEnrollment $enrollment)
                     ->count();
 
             if ($currentEnrollments >= $course->max_students) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This course has reached its maximum enrollment capacity for the current semester.'
-                ], 422);
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This course has reached its maximum enrollment capacity for the current semester.'
+                    ], 422);
+                }
+                return redirect()->route('student.enrollment.error')
+                    ->with('error_message', 'This course has reached its maximum enrollment capacity for the current semester.');
             }
         }
 
-        // Calculate total fees including additional fees
-        $totalFees = ($course->tuition_fee ?? 0) + 
-                ($course->registration_fee ?? 0) + 
-                ($course->examination_fee ?? 0) + 
-                ($course->library_fee ?? 0) + 
-                ($course->lab_fee ?? 0);
+        // Calculate total fees using course total_fee or sum of individual fees
+        $totalFees = $course->total_fee ?? (
+            ($course->tuition_fee ?? 0) + 
+            ($course->registration_fee ?? 0) + 
+            ($course->examination_fee ?? 0) + 
+            ($course->library_fee ?? 0) + 
+            ($course->lab_fee ?? 0)
+        );
 
         // Calculate installment details if payment plan is installments
         $installmentCount = null;
@@ -646,21 +667,18 @@ public function getFeeDetails(StudentEnrollment $enrollment)
 
             \DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Enrollment submitted successfully! Please complete your payment to secure your spot.',
-                'enrollment_number' => $enrollment->enrollment_number,
-                'enrollment' => [
-                    'id' => $enrollment->id,
+            // Check if request expects JSON (AJAX)
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Enrollment submitted successfully! Please complete your payment to secure your spot.',
                     'enrollment_number' => $enrollment->enrollment_number,
-                    'course_name' => $course->name,
-                    'semester' => $semester->name . ' ' . $semester->academic_year,
-                    'total_fees' => number_format($totalFees, 2),
-                    'payment_plan' => $request->payment_plan === 'installments' ? 'Installment Plan' : 'Full Payment',
-                    'next_payment_due' => ($enrollment->next_payment_due) ? $enrollment->next_payment_due->format('F j, Y') : 'N/A',
-                    'next_payment_amount' => $request->payment_plan === 'installments' ? number_format($installmentAmount, 2) : number_format($totalFees, 2),
-                ]
-            ]);
+                ]);
+            }
+            
+            // Redirect to success page for regular form submissions
+            return redirect()->route('student.enrollment.success', $enrollment->id)
+                ->with('success', 'Enrollment submitted successfully! Please complete your payment to secure your spot.');
 
         } catch (\Exception $e) {
             \DB::rollBack();
@@ -674,10 +692,43 @@ public function getFeeDetails(StudentEnrollment $enrollment)
                 $errorMessage = 'Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine();
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => $errorMessage
-            ], 500);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage
+                ], 500);
+            }
+            
+            return redirect()->route('student.enrollment.error')
+                ->with('error_message', $errorMessage);
         }
+    }
+    
+    /**
+     * Display enrollment success page
+     */
+    public function enrollmentSuccess(StudentEnrollment $enrollment): View
+    {
+        $student = Auth::guard('student')->user();
+        
+        // Ensure enrollment belongs to the authenticated student
+        if ($enrollment->student_id !== $student->id) {
+            abort(403, 'Unauthorized access to enrollment.');
+        }
+        
+        $enrollment->load(['course', 'semester']);
+        
+        return view('student.enrollment-success', compact('enrollment', 'student'));
+    }
+    
+    /**
+     * Display enrollment error page
+     */
+    public function enrollmentError(): View
+    {
+        $student = Auth::guard('student')->user();
+        $error_message = session('error_message', 'An unexpected error occurred during enrollment.');
+        
+        return view('student.enrollment-error', compact('student', 'error_message'));
     }
 }

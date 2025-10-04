@@ -37,25 +37,25 @@ class AdminAuth
             foreach ($permissions as $permission) {
                 switch ($permission) {
                     case 'super_admin':
-                        $hasPermission = $admin->is_super_admin;
+                        $hasPermission = $admin->isSuperAdmin();
                         break;
                     case 'manage_students':
-                        $hasPermission = $admin->can_manage_students || $admin->is_super_admin;
+                        $hasPermission = $admin->can_manage_students || $admin->isSuperAdmin();
                         break;
                     case 'manage_courses':
-                        $hasPermission = $admin->can_manage_courses || $admin->is_super_admin;
+                        $hasPermission = $admin->can_manage_courses || $admin->isSuperAdmin();
                         break;
                     case 'manage_payments':
-                        $hasPermission = $admin->can_manage_payments || $admin->is_super_admin;
+                        $hasPermission = $admin->can_manage_payments || $admin->isSuperAdmin();
                         break;
                     case 'view_reports':
-                        $hasPermission = $admin->can_view_reports || $admin->is_super_admin;
+                        $hasPermission = $admin->can_view_reports || $admin->isSuperAdmin();
                         break;
                     case 'approve_students':
-                        $hasPermission = $admin->can_approve_students || $admin->is_super_admin;
+                        $hasPermission = $admin->can_approve_students || $admin->isSuperAdmin();
                         break;
                     case 'manage_fees':
-                        $hasPermission = $admin->can_manage_fees || $admin->is_super_admin;
+                        $hasPermission = $admin->can_manage_fees || $admin->isSuperAdmin();
                         break;
                     default:
                         $hasPermission = false;

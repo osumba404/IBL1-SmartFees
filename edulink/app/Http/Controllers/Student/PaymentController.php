@@ -22,13 +22,44 @@ class PaymentController extends Controller
     protected StripeService $stripeService;
 
     public function __construct(
-        PaymentService $paymentService,
-        MpesaService $mpesaService,
-        StripeService $stripeService
+        PaymentService $paymentService = null,
+        MpesaService $mpesaService = null,
+        StripeService $stripeService = null
     ) {
         $this->paymentService = $paymentService;
         $this->mpesaService = $mpesaService;
         $this->stripeService = $stripeService;
+    }
+
+    /**
+     * Show payment creation form
+     */
+    public function create(Request $request): View
+    {
+        try {
+            $student = Auth::guard('student')->user();
+            
+            if (!$student) {
+                return response('Not authenticated', 401);
+            }
+            
+            // Get student's active enrollment
+            $enrollment = $student->enrollments()
+                ->with(['course', 'semester'])
+                ->where('status', 'enrolled')
+                ->first();
+                
+            // If no enrolled status, get any enrollment for testing
+            if (!$enrollment) {
+                $enrollment = $student->enrollments()
+                    ->with(['course', 'semester'])
+                    ->first();
+            }
+                
+            return view('student.payments.create', compact('enrollment', 'student'));
+        } catch (\Exception $e) {
+            return response('Error: ' . $e->getMessage(), 500);
+        }
     }
 
     /**
@@ -343,7 +374,7 @@ class PaymentController extends Controller
                 ->first();
         }
 
-        return view('student.payment-success', compact('payment', 'student'));
+        return view('student.payments.success', compact('payment', 'student'));
     }
 
     /**
@@ -352,7 +383,7 @@ class PaymentController extends Controller
     public function paymentCancel(): View
     {
         $student = Auth::guard('student')->user();
-        return view('student.payment-cancel', compact('student'));
+        return view('student.payments.cancel', compact('student'));
     }
 
     /**

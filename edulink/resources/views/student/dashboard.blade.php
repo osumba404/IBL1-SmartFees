@@ -195,13 +195,13 @@
                 <div class="card-body">
                     <div class="row text-center">
                         <div class="col-6 mb-3">
-                            <div class="p-3 border rounded">
+                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
                                 <i class="fas fa-mobile-alt fa-2x text-success mb-2"></i>
                                 <div class="small">M-Pesa</div>
                             </div>
                         </div>
                         <div class="col-6 mb-3">
-                            <div class="p-3 border rounded">
+                            <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
                                 <i class="fab fa-cc-visa fa-2x text-primary mb-2"></i>
                                 <div class="small">Card</div>
                             </div>
@@ -280,6 +280,18 @@
         border-top: none;
         font-weight: 600;
         color: #495057;
+    }
+    
+    .payment-method-card {
+        transition: all 0.3s ease;
+        border: 2px solid #dee2e6 !important;
+    }
+    
+    .payment-method-card:hover {
+        border-color: #007bff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        background-color: #f8f9ff;
     }
 </style>
 @endpush

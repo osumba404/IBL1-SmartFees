@@ -191,12 +191,13 @@ class Student extends Authenticatable
      */
     public function getFinancialSummary(): array
     {
-        $totalOwed = $this->total_fees_owed ?? 0;
-        $totalPaid = $this->total_fees_paid ?? 0;
+        // Calculate from enrollments directly
+        $totalOwed = $this->enrollments()->sum('total_fees_due');
+        $totalPaid = $this->enrollments()->sum('fees_paid');
         $outstandingBalance = $totalOwed - $totalPaid;
         
         $recentPayments = $this->completedPayments()
-            ->latest('payment_date')
+            ->latest('created_at')
             ->limit(5)
             ->get();
             
@@ -210,7 +211,7 @@ class Student extends Authenticatable
             'outstanding_balance' => $outstandingBalance,
             'pending_payments' => $pendingPayments,
             'payment_status' => $outstandingBalance > 0 ? 'outstanding' : 'up_to_date',
-            'last_payment_date' => $this->last_payment_date,
+            'last_payment_date' => $this->completedPayments()->latest('created_at')->first()?->created_at,
             'recent_payments' => $recentPayments,
             'has_overdue_payments' => $this->hasOverduePayments(),
         ];

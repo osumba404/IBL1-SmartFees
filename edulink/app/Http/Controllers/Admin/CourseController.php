@@ -79,7 +79,7 @@ class CourseController extends Controller
             'prerequisites.*' => 'exists:courses,id',
             'enrollment_capacity' => 'nullable|integer|min:1',
             'total_fee' => 'required|numeric|min:0',
-            'enrollment_open' => 'required|in:yes,no',
+            'is_active' => 'required|boolean',
             'status' => 'required|in:active,inactive,discontinued',
         ]);
 
@@ -94,7 +94,7 @@ class CourseController extends Controller
             'prerequisites' => $request->prerequisites ?? [],
             'max_students' => $request->enrollment_capacity,
             'total_fee' => $request->total_fee,
-            'enrollment_open' => $request->enrollment_open === 'yes',
+            'is_active' => $request->boolean('is_active'),
             'status' => $request->status,
         ]);
 
@@ -169,7 +169,7 @@ class CourseController extends Controller
             'prerequisites.*' => 'exists:courses,id',
             'enrollment_capacity' => 'nullable|integer|min:1',
             'total_fee' => 'required|numeric|min:0',
-            'enrollment_open' => 'required|in:yes,no',
+            'is_active' => 'required|boolean',
             'status' => 'required|in:active,inactive,discontinued',
         ]);
 
@@ -195,7 +195,7 @@ class CourseController extends Controller
             'prerequisites' => $request->prerequisites ?? [],
             'max_students' => $request->enrollment_capacity,
             'total_fee' => $request->total_fee,
-            'enrollment_open' => $request->enrollment_open === 'yes',
+            'is_active' => $request->boolean('is_active'),
             'status' => $request->status,
         ]);
 
@@ -288,7 +288,7 @@ class CourseController extends Controller
         $newCourse->name = $request->name;
         $newCourse->course_code = strtoupper($request->code);
         $newCourse->status = 'inactive'; // Start as inactive
-        $newCourse->enrollment_open = false;
+        $newCourse->is_active = false;
         $newCourse->save();
 
         return redirect()->route('admin.courses.show', $newCourse)
@@ -320,12 +320,12 @@ class CourseController extends Controller
                 break;
                 
             case 'open_enrollment':
-                $count = $courses->update(['enrollment_open' => true]);
+                $count = $courses->update(['is_active' => true]);
                 $message = "Opened enrollment for {$count} courses.";
                 break;
                 
             case 'close_enrollment':
-                $count = $courses->update(['enrollment_open' => false]);
+                $count = $courses->update(['is_active' => false]);
                 $message = "Closed enrollment for {$count} courses.";
                 break;
         }
@@ -387,7 +387,7 @@ class CourseController extends Controller
                     $course->students_count,
                     $course->enrollments_count,
                     $course->status,
-                    $course->enrollment_open ? 'Open' : 'Closed',
+                    $course->is_active ? 'Open' : 'Closed',
                 ]);
             }
 
@@ -421,6 +421,36 @@ class CourseController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * Update course fee structure
+     */
+    public function updateFees(Request $request, Course $course): RedirectResponse
+    {
+        $request->validate([
+            'total_fee' => 'required|numeric|min:0',
+            'registration_fee' => 'nullable|numeric|min:0',
+            'examination_fee' => 'nullable|numeric|min:0',
+            'library_fee' => 'nullable|numeric|min:0',
+            'lab_fee' => 'nullable|numeric|min:0',
+            'allows_installments' => 'nullable|boolean',
+            'max_installments' => 'nullable|integer|min:2|max:12',
+            'minimum_deposit_percentage' => 'nullable|numeric|min:10|max:100',
+        ]);
+
+        $course->update([
+            'total_fee' => $request->total_fee,
+            'registration_fee' => $request->registration_fee ?? 0,
+            'examination_fee' => $request->examination_fee ?? 0,
+            'library_fee' => $request->library_fee ?? 0,
+            'lab_fee' => $request->lab_fee ?? 0,
+            'allows_installments' => $request->boolean('allows_installments'),
+            'max_installments' => $request->max_installments ?? 4,
+            'minimum_deposit_percentage' => $request->minimum_deposit_percentage ?? 25,
+        ]);
+
+        return back()->with('success', 'Fee structure updated successfully.');
     }
 
     /**

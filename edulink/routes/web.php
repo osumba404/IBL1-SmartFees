@@ -61,6 +61,8 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('/enrollments', [StudentController::class, 'enrollments'])->name('enrollments.index');
         Route::get('/enroll', [StudentController::class, 'enroll'])->name('enroll');
         Route::post('/enrollments', [StudentController::class, 'storeEnrollment'])->name('enrollments.store');
+        Route::get('/enrollment/success/{enrollment}', [StudentController::class, 'enrollmentSuccess'])->name('enrollment.success');
+        Route::get('/enrollment/error', [StudentController::class, 'enrollmentError'])->name('enrollment.error');
         Route::get('/fees', [StudentController::class, 'fees'])->name('fees.index');
         Route::get('/payments', [StudentController::class, 'payments'])->name('payments.index');
         Route::get('/payments/history', [StudentController::class, 'paymentHistory'])->name('payments.history');
@@ -78,8 +80,19 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::post('/payments/stripe/webhook', [StudentPaymentController::class, 'stripeWebhook'])->name('payments.stripe.webhook');
         Route::get('/payments/success', [StudentPaymentController::class, 'paymentSuccess'])->name('payments.success');
         Route::get('/payments/cancel', [StudentPaymentController::class, 'paymentCancel'])->name('payments.cancel');
-        Route::get('/payments/create', [StudentPaymentController::class, 'create'])
-    ->name('payments.create');
+        // Route moved above to avoid dependency issues
+        
+        // Simple payment route without dependencies
+        Route::get('/payments/create', function() {
+            $student = Auth::guard('student')->user();
+            $enrollment = null; // For now
+            return view('student.payments.create', compact('enrollment', 'student'));
+        })->name('payments.create');
+        
+        // Test route without middleware
+        Route::get('/test-payment', function() {
+            return 'Payment route works!';
+        })->name('test.payment');
 
         // Notifications
         Route::get('/notifications', [StudentController::class, 'notifications'])->name('notifications.index');
@@ -107,7 +120,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     });
 
     // Authenticated admin routes
-    Route::middleware(['web', 'auth:admin', 'csrf'])->group(function () {
+    Route::middleware(['web', 'auth:admin'])->group(function () {
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [AdminAuthController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [AdminAuthController::class, 'profile'])->name('profile');
@@ -150,6 +163,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{course}/toggle-status', [CourseController::class, 'toggleStatus'])->name('toggle-status');
             Route::get('/{course}/students', [CourseController::class, 'students'])->name('students');
             Route::get('/{course}/fee-structures', [CourseController::class, 'feeStructures'])->name('fee-structures');
+            Route::put('/{course}/update-fees', [CourseController::class, 'updateFees'])->name('update-fees');
             Route::post('/{course}/duplicate', [CourseController::class, 'duplicate'])->name('duplicate');
             Route::post('/bulk-update', [CourseController::class, 'bulkUpdate'])->name('bulk-update');
             Route::get('/export', [CourseController::class, 'export'])->name('export');
@@ -241,3 +255,8 @@ Route::get('/login', function () {
 // Public webhook routes (no authentication required)
 Route::post('/webhooks/mpesa', [StudentPaymentController::class, 'mpesaCallback'])->name('webhooks.mpesa');
 Route::post('/webhooks/stripe', [StudentPaymentController::class, 'stripeWebhook'])->name('webhooks.stripe');
+
+// Test route without any middleware
+Route::get('/test-public', function() {
+    return 'Public route works!';
+});

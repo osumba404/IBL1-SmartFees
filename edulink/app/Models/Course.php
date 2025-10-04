@@ -45,6 +45,7 @@ class Course extends Model
         'current_enrollment',
         'prerequisites',
         'admission_requirements',
+        'is_active',
     ];
 
     /**
@@ -62,6 +63,7 @@ class Course extends Model
             'lab_fee' => 'decimal:2',
             'minimum_deposit_percentage' => 'decimal:2',
             'allows_installments' => 'boolean',
+            'is_active' => 'boolean',
             'prerequisites' => 'array',
         ];
     }

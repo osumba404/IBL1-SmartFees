@@ -129,7 +129,7 @@ class StudentManagementController extends Controller
         $admin = Auth::guard('admin')->user();
         
         $student->load([
-            'course',
+            'enrollments.course',
             'enrollments.semester',
             'enrollments.feeStructure',
             'payments' => function($query) {
@@ -452,9 +452,9 @@ class StudentManagementController extends Controller
                 // Get current courses
                 $currentCourses = $student->activeEnrollments->pluck('course.name')->join(', ');
                 
-                // Calculate financial summary
-                $totalOwed = $student->total_fees_owed ?? 0;
-                $totalPaid = $student->total_fees_paid ?? 0;
+                // Calculate financial summary from enrollments
+                $totalOwed = $student->enrollments->sum('total_fees_due');
+                $totalPaid = $student->enrollments->sum('fees_paid');
                 $outstanding = $totalOwed - $totalPaid;
                 
                 fputcsv($file, [

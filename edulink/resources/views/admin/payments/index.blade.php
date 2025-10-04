@@ -164,8 +164,8 @@
                         <tr>
                             <td>
                                 <span class="font-weight-bold">#{{ $payment->id }}</span>
-                                @if($payment->reference_number)
-                                <br><small class="text-muted">{{ $payment->reference_number }}</small>
+                                @if($payment->payment_reference)
+                                <br><small class="text-muted">{{ $payment->payment_reference }}</small>
                                 @endif
                             </td>
                             <td>
@@ -186,8 +186,8 @@
                                 <span class="font-weight-bold">
                                     {{ config('services.college.currency_symbol', 'KSh') }} {{ number_format($payment->amount, 2) }}
                                 </span>
-                                @if($payment->fees && $payment->fees > 0)
-                                <br><small class="text-muted">Fee: {{ config('services.college.currency_symbol', 'KSh') }} {{ number_format($payment->fees, 2) }}</small>
+                                @if($payment->payment_type)
+                                <br><small class="text-muted">{{ ucfirst($payment->payment_type) }} Fee</small>
                                 @endif
                             </td>
                             <td>

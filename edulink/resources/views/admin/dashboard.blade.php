@@ -38,11 +38,11 @@
     
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="stats-card warning">
-            <div class="stats-value">{{ number_format($stats['pending_payments']) }}</div>
-            <div class="stats-label">Pending Payments</div>
+            <div class="stats-value">KSh {{ number_format($stats['total_outstanding'], 2) }}</div>
+            <div class="stats-label">Outstanding Balance</div>
             <div class="mt-2">
                 <small>
-                    KSh {{ number_format($stats['pending_amount'], 2) }} total
+                    {{ number_format($stats['pending_payments']) }} pending payments
                 </small>
             </div>
         </div>

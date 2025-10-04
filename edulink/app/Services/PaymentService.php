@@ -356,6 +356,105 @@ class PaymentService
     }
 
     /**
+     * Verify a payment manually
+     */
+    public function verifyPayment(int $paymentId, array $verificationData = []): array
+    {
+        try {
+            $payment = Payment::findOrFail($paymentId);
+            
+            if ($payment->is_verified) {
+                return [
+                    'success' => false,
+                    'message' => 'Payment is already verified.'
+                ];
+            }
+            
+            $payment->update([
+                'is_verified' => true,
+                'verified_at' => now(),
+                'verified_by' => $verificationData['verified_by'] ?? null,
+                'admin_notes' => $verificationData['verification_notes'] ?? null,
+                'status' => 'completed',
+                'processed_at' => now(),
+            ]);
+            
+            // Update enrollment payment status if enrollment exists
+            if ($payment->enrollment) {
+                $payment->enrollment->updatePaymentStatus($payment->amount);
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Payment verified successfully.'
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Payment verification failed: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Process payment refund
+     */
+    public function refundPayment(int $paymentId, array $refundData): array
+    {
+        try {
+            $payment = Payment::findOrFail($paymentId);
+            
+            if ($payment->status !== 'completed') {
+                return [
+                    'success' => false,
+                    'message' => 'Only completed payments can be refunded.'
+                ];
+            }
+            
+            if ($payment->is_refunded) {
+                return [
+                    'success' => false,
+                    'message' => 'Payment has already been refunded.'
+                ];
+            }
+            
+            $refundAmount = $refundData['refund_amount'];
+            if ($refundAmount > $payment->amount) {
+                return [
+                    'success' => false,
+                    'message' => 'Refund amount cannot exceed payment amount.'
+                ];
+            }
+            
+            $payment->update([
+                'is_refunded' => true,
+                'refund_amount' => $refundAmount,
+                'refund_reason' => $refundData['refund_reason'],
+                'refund_reference' => 'REF' . strtoupper(uniqid()),
+                'refunded_at' => now(),
+                'status' => 'refunded',
+            ]);
+            
+            // Update enrollment payment status (subtract refunded amount)
+            if ($payment->enrollment) {
+                $payment->enrollment->updatePaymentStatus(-$refundAmount);
+            }
+            
+            return [
+                'success' => true,
+                'message' => 'Payment refunded successfully.'
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Payment refund failed: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Calculate payment breakdown
      */
     public function calculatePaymentBreakdown(StudentEnrollment $enrollment, float $amount): array

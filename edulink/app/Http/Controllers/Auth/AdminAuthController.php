@@ -83,6 +83,13 @@ class AdminAuthController extends Controller
         $currentMonth = now();
         $lastMonth = now()->subMonth();
         
+        // Calculate outstanding balances from enrollments
+        $totalOutstanding = \App\Models\StudentEnrollment::sum('total_fees_due') - \App\Models\StudentEnrollment::sum('fees_paid');
+        $overdueEnrollments = \App\Models\StudentEnrollment::where('next_payment_due', '<', now())
+            ->where('fees_paid', '<', \DB::raw('total_fees_due'))
+            ->get();
+        $overdueAmount = $overdueEnrollments->sum('outstanding_balance');
+        
         $stats = [
             'total_students' => Student::count(),
             'active_students' => Student::where('status', 'active')->count(),
@@ -92,18 +99,15 @@ class AdminAuthController extends Controller
                 ->whereMonth('created_at', $currentMonth->month)
                 ->count(),
             'total_courses' => Course::count(),
-            'active_courses' => Course::where('status', 'active')->count(),
+            'active_courses' => Course::where('is_active', true)->count(),
             'total_semesters' => Semester::count(),
             'active_semesters' => Semester::where('status', 'active')->count(),
             'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
+            'total_outstanding' => $totalOutstanding,
             'pending_payments' => Payment::where('status', 'pending')->count(),
             'pending_amount' => Payment::where('status', 'pending')->sum('amount'),
-            'overdue_payments' => Payment::where('status', 'pending')
-                ->where('created_at', '<', now()->subDays(30))
-                ->count(),
-            'overdue_amount' => Payment::where('status', 'pending')
-                ->where('created_at', '<', now()->subDays(30))
-                ->sum('amount'),
+            'overdue_payments' => $overdueEnrollments->count(),
+            'overdue_amount' => $overdueAmount,
         ];
 
         // Calculate revenue growth percentage

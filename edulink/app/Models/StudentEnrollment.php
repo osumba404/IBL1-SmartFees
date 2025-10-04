@@ -67,6 +67,18 @@ class StudentEnrollment extends Model
             'is_deferred' => 'boolean',
         ];
     }
+    
+    /**
+     * Get the outstanding balance (calculated dynamically)
+     */
+    public function getOutstandingBalanceAttribute($value): float
+    {
+        // Calculate dynamically: total fees due minus fees paid
+        $totalDue = (float) ($this->total_fees_due ?? 0);
+        $paid = (float) ($this->fees_paid ?? 0);
+        
+        return max(0, $totalDue - $paid);
+    }
 
     /**
      * Get the student for this enrollment.

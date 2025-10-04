@@ -88,19 +88,17 @@ class PaymentController extends Controller
         $paymentMethods = ['mpesa', 'stripe', 'bank_transfer', 'cash'];
 
         // Payment statistics
-        $stats = [
-            'total_payments' => Payment::where('status', 'completed')->sum('amount'),
-            'pending_payments' => Payment::where('status', 'pending')->sum('amount'),
-            'pending_verification' => Payment::where('status', 'pending_verification')->count(),
-            'failed_payments' => Payment::where('status', 'failed')->count(),
-            'today_payments' => Payment::where('status', 'completed')
-                ->whereDate('created_at', today())
-                ->sum('amount'),
-        ];
+        $todayPayments = Payment::where('status', 'completed')
+            ->whereDate('created_at', today())
+            ->sum('amount');
+        $completedCount = Payment::where('status', 'completed')->count();
+        $pendingCount = Payment::where('status', 'pending')->count();
+        $failedCount = Payment::where('status', 'failed')->count();
 
         return view('admin.payments.index', compact(
             'payments', 'courses', 'semesters', 'statuses', 
-            'paymentMethods', 'stats', 'admin'
+            'paymentMethods', 'todayPayments', 'completedCount', 
+            'pendingCount', 'failedCount', 'admin'
         ));
     }
 
@@ -115,8 +113,7 @@ class PaymentController extends Controller
             'student',
             'enrollment.course',
             'enrollment.semester',
-            'enrollment.feeStructure',
-            'notifications'
+            'enrollment.feeStructure'
         ]);
 
         return view('admin.payments.show', compact('payment', 'admin'));
@@ -147,14 +144,23 @@ class PaymentController extends Controller
 
             if ($result['success']) {
                 DB::commit();
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => true, 'message' => $result['message']]);
+                }
                 return back()->with('success', 'Payment verified successfully.');
             } else {
                 DB::rollBack();
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => $result['message']]);
+                }
                 return back()->withErrors(['verify' => $result['message']]);
             }
 
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Payment verification failed. Please try again.']);
+            }
             return back()->withErrors(['verify' => 'Payment verification failed. Please try again.']);
         }
     }
@@ -186,14 +192,23 @@ class PaymentController extends Controller
 
             if ($result['success']) {
                 DB::commit();
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => true, 'message' => $result['message']]);
+                }
                 return back()->with('success', 'Payment refunded successfully.');
             } else {
                 DB::rollBack();
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => $result['message']]);
+                }
                 return back()->withErrors(['refund' => $result['message']]);
             }
 
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Payment refund failed. Please try again.']);
+            }
             return back()->withErrors(['refund' => 'Payment refund failed. Please try again.']);
         }
     }
