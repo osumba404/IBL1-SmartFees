@@ -121,7 +121,8 @@
                 </div>
                 <div class="card-body">
                     @if($enrollments->count() > 0)
-                        <div class="table-responsive">
+                        <!-- Desktop Table -->
+                        <div class="table-responsive d-none d-md-block">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
@@ -176,20 +177,70 @@
                                                             Pay Now
                                                         </button>
                                                     @endif
-
                                                     <button type="button" class="btn btn-outline-primary btn-sm" 
                                                             onclick="window.location.href='{{ route('student.enrollments.show', $enrollment->id) }}'">
                                                         Details
                                                     </button>
-                                                    <!-- <button type="button" class="btn btn-outline-primary btn-sm btn-details" data-enrollment-id="{{ $enrollment->id }}">
-                                                        Details
-                                                    </button> -->
                                                 </div>
                                             </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                        
+                        <!-- Mobile Cards -->
+                        <div class="d-md-none">
+                            @foreach($enrollments as $enrollment)
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <h6 class="card-title mb-1">{{ $enrollment->course->name }}</h6>
+                                            <small class="text-muted">{{ $enrollment->course->course_code }}</small>
+                                        </div>
+                                        <span class="badge bg-{{ $enrollment->status === 'active' ? 'success' : ($enrollment->status === 'completed' ? 'primary' : 'warning') }}">
+                                            {{ ucfirst($enrollment->status) }}
+                                        </span>
+                                    </div>
+                                    
+                                    @if($enrollment->semester)
+                                    <p class="card-text mb-2">
+                                        <small class="text-muted">{{ $enrollment->semester->name }} - {{ $enrollment->semester->start_date->format('M Y') }}</small>
+                                    </p>
+                                    @endif
+                                    
+                                    <div class="row text-center mb-3">
+                                        <div class="col-4">
+                                            <div class="small text-muted">Total Fee</div>
+                                            <div class="fw-bold">KES {{ number_format($enrollment->total_fees_due, 2) }}</div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="small text-muted">Paid</div>
+                                            <div class="fw-bold text-success">KES {{ number_format($enrollment->fees_paid, 2) }}</div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="small text-muted">Outstanding</div>
+                                            <div class="fw-bold text-{{ $enrollment->outstanding_balance > 0 ? 'danger' : 'success' }}">
+                                                KES {{ number_format($enrollment->outstanding_balance, 2) }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        @if($enrollment->outstanding_balance > 0)
+                                        <button class="btn btn-primary btn-sm" onclick="initiatePayment({{ $enrollment->id }})">
+                                            <i class="bi bi-credit-card me-1"></i>Pay Now
+                                        </button>
+                                        @endif
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                onclick="window.location.href='{{ route('student.enrollments.show', $enrollment->id) }}'">
+                                            <i class="bi bi-eye me-1"></i>Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
                         </div>
                     @else
                         <div class="text-center py-4">
@@ -212,17 +263,17 @@
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
-                        <div class="col-6 mb-3">
+                        <div class="col-sm-6 mb-3">
                             <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
-                                <i class="bi bi-phone fa-2x text-success mb-2"></i>
-                                <div class="small"><strong>M-Pesa</strong></div>
+                                <i class="bi bi-phone fs-1 text-success mb-2"></i>
+                                <div class="fw-bold">M-Pesa</div>
                                 <div class="text-muted small">Mobile Money</div>
                             </div>
                         </div>
-                        <div class="col-6 mb-3">
+                        <div class="col-sm-6 mb-3">
                             <div class="p-3 border rounded payment-method-card" onclick="window.location.href='{{ route('student.payments.create') }}'" style="cursor: pointer;">
-                                <i class="bi bi-credit-card fa-2x text-primary mb-2"></i>
-                                <div class="small"><strong>Card Payment</strong></div>
+                                <i class="bi bi-credit-card fs-1 text-primary mb-2"></i>
+                                <div class="fw-bold">Card Payment</div>
                                 <div class="text-muted small">Visa, Mastercard</div>
                             </div>
                         </div>

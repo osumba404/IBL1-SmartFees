@@ -256,6 +256,15 @@ Route::get('/login', function () {
 Route::post('/webhooks/mpesa', [StudentPaymentController::class, 'mpesaCallback'])->name('webhooks.mpesa');
 Route::post('/webhooks/stripe', [StudentPaymentController::class, 'stripeWebhook'])->name('webhooks.stripe');
 
+// Legal pages
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy-policy');
+
+Route::get('/terms-of-service', function () {
+    return view('terms-of-service');
+})->name('terms-of-service');
+
 // Test route without any middleware
 Route::get('/test-public', function() {
     return 'Public route works!';

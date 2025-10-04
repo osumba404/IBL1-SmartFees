@@ -166,7 +166,7 @@ class StudentController extends Controller
             abort(403, 'Unauthorized access to payment details.');
         }
 
-        $payment->load(['enrollment.course', 'enrollment.semester', 'notifications']);
+        $payment->load(['enrollment.course', 'enrollment.semester']);
 
         return view('student.payment-details', compact('payment', 'student'));
     }

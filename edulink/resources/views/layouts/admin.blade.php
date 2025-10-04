@@ -489,6 +489,21 @@
 
             @yield('content')
         </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-top py-3 mt-4">
+            <div class="container-fluid px-4">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="mb-0 text-muted small">&copy; {{ date('Y') }} Edulink International College Nairobi. All rights reserved.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a href="{{ route('privacy-policy') }}" class="text-muted text-decoration-none small me-3">Privacy Policy</a>
+                        <a href="{{ route('terms-of-service') }}" class="text-muted text-decoration-none small">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <!-- Bootstrap JS -->

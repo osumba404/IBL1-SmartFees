@@ -37,9 +37,11 @@
         }
 
         .navbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%) !important;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            height: var(--navbar-height);
+            min-height: var(--navbar-height);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 1rem;
         }
 
         .navbar-brand {
@@ -64,12 +66,23 @@
         }
 
         .navbar-toggler {
-            border: none;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             color: white;
+            padding: 0.25rem 0.5rem;
+            margin-left: auto;
+            order: 2;
         }
 
         .navbar-toggler:focus {
-            box-shadow: none;
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
+        }
+        
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+        
+        .navbar-brand {
+            order: 1;
         }
 
         .main-content {
@@ -310,6 +323,65 @@
             .stats-value {
                 font-size: 1.5rem;
             }
+            
+            .navbar-collapse {
+                background: rgba(37, 99, 235, 0.95);
+                margin-top: 0.5rem;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                backdrop-filter: blur(10px);
+                order: 3;
+                width: 100%;
+            }
+            
+            .navbar > .container {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .card {
+                margin-bottom: 1rem;
+            }
+            
+            .btn {
+                font-size: 0.875rem;
+                padding: 0.5rem 1rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+            
+            .table th,
+            .table td {
+                padding: 0.5rem 0.25rem;
+            }
+            
+            .btn-group-vertical .btn {
+                font-size: 0.75rem;
+                padding: 0.375rem 0.75rem;
+            }
+            
+            .stats-card {
+                padding: 1rem;
+            }
+            
+            .stats-value {
+                font-size: 1.25rem;
+            }
         }
 
         .loading-spinner {
@@ -517,8 +589,8 @@
                 </div>
                 <div class="col-md-6 text-md-end">
                     <small>
-                        <a href="#" class="text-light me-3">Privacy Policy</a>
-                        <a href="#" class="text-light">Terms of Service</a>
+                        <a href="{{ route('privacy-policy') }}" class="text-light me-3">Privacy Policy</a>
+                        <a href="{{ route('terms-of-service') }}" class="text-light">Terms of Service</a>
                     </small>
                 </div>
             </div>
