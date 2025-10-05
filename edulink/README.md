@@ -171,8 +171,8 @@ edulink/
 
 ### Step 1: Clone Repository
 ```bash
-git clone <repository-url>
-cd edulink
+git clone https://github.com/osumba404/IBL1-SmartFees.git
+cd IBL1-SmartFees/edulink
 ```
 
 ### Step 2: Install Dependencies
