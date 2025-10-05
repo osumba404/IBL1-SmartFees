@@ -654,9 +654,14 @@ For support and questions:
 
 ## 🙏 Acknowledgments
 
+### Development Team
+- **Collins Oieno** - Lead Developer
+- **Evand Osumba** - Developer
+
+### Technologies & Services
 - Laravel Framework and community
 - Bootstrap for UI components
-- Payment gateway providers (Safaricom M-Pesa, Stripe)
+- Payment gateway providers (Safaricom M-Pesa, Stripe, PayPal)
 - Open source contributors and maintainers
 
 ---
