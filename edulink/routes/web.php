@@ -281,5 +281,9 @@ require __DIR__.'/payment.php';
 
 // M-Pesa webhook routes (no middleware needed)
 Route::post('/webhooks/mpesa', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('webhooks.mpesa');
+Route::post('/api/mpesa/callback', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('api.mpesa.callback');
+Route::get('/api/mpesa/callback', function() {
+    return response()->json(['status' => 'M-Pesa callback endpoint active', 'time' => now()]);
+});
 Route::post('/webhooks/mpesa/timeout', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('webhooks.mpesa.timeout');
 Route::post('/webhooks/mpesa/result', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('webhooks.mpesa.result');

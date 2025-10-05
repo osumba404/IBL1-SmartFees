@@ -63,9 +63,9 @@
                             <i class="bi bi-arrow-clockwise me-2"></i>
                             Check Status
                         </button>
-                        <button type="button" class="btn btn-outline-success" onclick="simulatePayment()">
+                        <button type="button" class="btn btn-success" onclick="simulatePayment()">
                             <i class="bi bi-check-circle me-2"></i>
-                            Simulate Payment (Test)
+                            Complete Payment (Since you paid on phone)
                         </button>
                         <a href="{{ route('payment.create') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left me-2"></i>

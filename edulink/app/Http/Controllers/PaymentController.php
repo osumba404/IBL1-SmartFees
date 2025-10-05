@@ -103,7 +103,7 @@ class PaymentController extends Controller
                 'PartyA' => $phone,
                 'PartyB' => $shortcode,
                 'PhoneNumber' => $phone,
-                'CallBackURL' => 'https://webhook.site/213dfa8d-1e3d-4322-b4a7-7385bc6a5859',
+                'CallBackURL' => 'https://metal-pugs-unite.loca.lt/api/mpesa/callback',
                 'AccountReference' => 'FEES' . $paymentId,
                 'TransactionDesc' => 'School Fees Payment'
             ];
@@ -211,7 +211,7 @@ class PaymentController extends Controller
         return response()->json([
             'success' => true,
             'status' => $payment->status,
-            'transaction_id' => $payment->transaction_id,
+            'transaction_id' => $payment->gateway_transaction_id ?? $payment->transaction_id,
             'amount' => $payment->amount
         ]);
     }
@@ -307,18 +307,31 @@ class PaymentController extends Controller
             $payment = Payment::find($paymentId);
             
             if ($payment && $payment->status === 'pending') {
-                $payment->update([
-                    'status' => 'completed',
-                    'transaction_id' => 'SIM' . time(),
-                    'payment_date' => now()
-                ]);
+                $payment->status = 'completed';
+                $payment->gateway_transaction_id = 'MPX' . time();
+                $payment->payment_date = now();
+                $payment->save();
                 
-                return response()->json(['success' => true, 'message' => 'Payment completed']);
+                // Update student enrollment balance
+                if ($payment->student_id) {
+                    $student = \App\Models\Student::find($payment->student_id);
+                    if ($student) {
+                        $enrollment = $student->enrollments()->first();
+                        if ($enrollment) {
+                            $enrollment->fees_paid += $payment->amount;
+                            $enrollment->save();
+                            Log::info('Updated enrollment balance', ['student_id' => $student->id, 'amount' => $payment->amount]);
+                        }
+                    }
+                }
+                
+                return response()->json(['success' => true, 'message' => 'Payment completed successfully']);
             }
             
-            return response()->json(['success' => false, 'message' => 'Payment not found']);
+            return response()->json(['success' => false, 'message' => 'Payment not found or already processed']);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Simulation failed']);
+            Log::error('Payment simulation error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Payment completion failed']);
         }
     }
     
