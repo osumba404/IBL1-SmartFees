@@ -83,7 +83,7 @@ class MpesaService
                 $payment->update([
                     'status' => 'completed',
                     'transaction_id' => $mpesaReceiptNumber,
-                    'payment_date' => now(),
+                    'payment_date' => now()->setTimezone(config('app.timezone')),
                     'payment_details' => json_encode($callbackData)
                 ]);
                 

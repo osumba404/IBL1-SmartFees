@@ -86,6 +86,7 @@ class Payment extends Model
             'value_date' => 'date',
             'bank_transaction_date' => 'date',
             'gateway_response' => 'array',
+            'payment_details' => 'array',
             'stripe_metadata' => 'array',
             'fee_breakdown' => 'array',
             'is_verified' => 'boolean',

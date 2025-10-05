@@ -113,6 +113,13 @@ return [
             'fee_percentage' => env('BANK_TRANSFER_FEE_PERCENTAGE', 0),
             'fee_fixed' => env('BANK_TRANSFER_FEE_FIXED', 0),
         ],
+        'paypal' => [
+            'enabled' => env('PAYPAL_ENABLED', true),
+            'name' => 'PayPal',
+            'description' => 'Pay with PayPal or credit card',
+            'fee_percentage' => env('PAYPAL_FEE_PERCENTAGE', 2.9),
+            'fee_fixed' => env('PAYPAL_FEE_FIXED', 0.30),
+        ],
         'cash' => [
             'enabled' => env('CASH_ENABLED', true),
             'name' => 'Cash Payment',

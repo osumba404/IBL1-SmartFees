@@ -33,12 +33,17 @@
                             </thead>
                             <tbody>
                                 @foreach($enrollments as $enrollment)
+                                @php
+                                    $totalFees = $enrollment->total_fees_due > 0 ? $enrollment->total_fees_due : ($enrollment->course->total_fee ?? 50000);
+                                    $paidAmount = $enrollment->fees_paid ?? 0;
+                                    $outstanding = $totalFees - $paidAmount;
+                                @endphp
                                 <tr>
                                     <td>{{ $enrollment->course->name }}</td>
                                     <td>{{ $enrollment->semester->name ?? 'N/A' }}</td>
-                                    <td>KSh {{ number_format($enrollment->total_fees_due, 2) }}</td>
-                                    <td class="text-success">KSh {{ number_format($enrollment->fees_paid, 2) }}</td>
-                                    <td class="text-danger">KSh {{ number_format($enrollment->outstanding_balance, 2) }}</td>
+                                    <td>KSh {{ number_format($totalFees, 2) }}</td>
+                                    <td class="text-success">KSh {{ number_format($paidAmount, 2) }}</td>
+                                    <td class="{{ $outstanding > 0 ? 'text-danger' : 'text-success' }}">KSh {{ number_format(max(0, $outstanding), 2) }}</td>
                                     <td>
                                         <span class="badge bg-{{ $enrollment->status === 'enrolled' ? 'success' : 'secondary' }}">
                                             {{ ucfirst($enrollment->status) }}

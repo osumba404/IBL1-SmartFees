@@ -118,13 +118,18 @@ class StudentController extends Controller
         ];
 
         foreach ($enrollments as $enrollment) {
-            $feeSummary['total_fees'] += $enrollment->total_fees_due;
-            $feeSummary['total_paid'] += $enrollment->fees_paid;
-            $feeSummary['total_pending'] += $enrollment->outstanding_balance;
+            // Use course total_fee if enrollment total_fees_due is 0
+            $totalFees = $enrollment->total_fees_due > 0 ? $enrollment->total_fees_due : ($enrollment->course->total_fee ?? 50000);
+            $paidAmount = $enrollment->fees_paid;
+            $outstanding = $totalFees - $paidAmount;
+            
+            $feeSummary['total_fees'] += $totalFees;
+            $feeSummary['total_paid'] += $paidAmount;
+            $feeSummary['total_pending'] += max(0, $outstanding);
             
             // Check for overdue amounts
-            if ($enrollment->next_payment_due && $enrollment->next_payment_due->isPast() && $enrollment->outstanding_balance > 0) {
-                $feeSummary['total_overdue'] += $enrollment->outstanding_balance;
+            if ($enrollment->next_payment_due && $enrollment->next_payment_due->isPast() && $outstanding > 0) {
+                $feeSummary['total_overdue'] += $outstanding;
             }
         }
 
@@ -215,6 +220,35 @@ class StudentController extends Controller
 
         // Return HTML statement view instead of PDF
         return view('student.statements.pdf', compact('student', 'enrollment'));
+    }
+
+    /**
+     * Download fee statement as PDF
+     */
+    public function downloadStatementPDF(Request $request)
+    {
+        $student = Auth::guard('student')->user();
+        
+        $request->validate([
+            'enrollment_id' => 'required|exists:student_enrollments,id',
+        ]);
+
+        $enrollment = StudentEnrollment::with(['course', 'semester', 'feeStructure', 'payments' => function($query) {
+            $query->where('status', 'completed')->latest();
+        }])->findOrFail($request->enrollment_id);
+
+        // Ensure enrollment belongs to the authenticated student
+        if ($enrollment->student_id !== $student->id) {
+            abort(403, 'Unauthorized access to statement.');
+        }
+
+        $html = view('student.statements.pdf', compact('student', 'enrollment'))->render();
+        
+        $filename = 'fee-statement-' . $student->student_id . '-' . date('Y-m-d') . '.html';
+        
+        return response($html)
+            ->header('Content-Type', 'text/html')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 
     /**

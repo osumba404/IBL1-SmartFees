@@ -90,8 +90,16 @@
                                         <th class="text-end">{{ number_format($enrollment->feeStructure->total_amount, 2) }}</th>
                                     </tr>
                                 @else
+                                    @php
+                                        $courseFee = $enrollment->course->total_fee ?? 50000;
+                                    @endphp
                                     <tr>
-                                        <td colspan="2" class="text-center">No fee structure available</td>
+                                        <td>Course Fee</td>
+                                        <td class="text-end">{{ number_format($courseFee, 2) }}</td>
+                                    </tr>
+                                    <tr class="table-active">
+                                        <th>Total Fees</th>
+                                        <th class="text-end">{{ number_format($courseFee, 2) }}</th>
                                     </tr>
                                 @endif
                             </tbody>
@@ -169,19 +177,24 @@
                     <h5 class="mb-0">Payment Summary</h5>
                 </div>
                 <div class="card-body">
+                    @php
+                        $totalFees = $enrollment->total_fees_due > 0 ? $enrollment->total_fees_due : ($enrollment->course->total_fee ?? 50000);
+                        $paidAmount = $enrollment->fees_paid ?? 0;
+                        $outstanding = $totalFees - $paidAmount;
+                    @endphp
                     <div class="d-flex justify-content-between mb-3">
                         <span>Total Fees:</span>
-                        <strong>KSh {{ number_format($enrollment->total_fees_due ?? 0, 2) }}</strong>
+                        <strong>KSh {{ number_format($totalFees, 2) }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Amount Paid:</span>
-                        <strong class="text-success">KSh {{ number_format($enrollment->fees_paid ?? 0, 2) }}</strong>
+                        <strong class="text-success">KSh {{ number_format($paidAmount, 2) }}</strong>
                     </div>
                     <hr>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Outstanding Balance:</span>
-                        <strong class="{{ ($enrollment->outstanding_balance ?? 0) > 0 ? 'text-danger' : 'text-success' }}">
-                            KSh {{ number_format($enrollment->outstanding_balance ?? 0, 2) }}
+                        <strong class="{{ $outstanding > 0 ? 'text-danger' : 'text-success' }}">
+                            KSh {{ number_format(max(0, $outstanding), 2) }}
                         </strong>
                     </div>
                     @if($enrollment->payment_plan === 'installment' && $enrollment->installment_amount > 0)

@@ -13,5 +13,10 @@ Route::middleware('auth:student')->group(function () {
     Route::get('/simulate-payment/{paymentId}', [PaymentController::class, 'simulate'])->name('simulate.payment');
 });
 
+// PayPal routes (no auth needed for returns)
+Route::get('/payment/paypal/return', [PaymentController::class, 'paypalReturn'])->name('payment.paypal.return');
+Route::get('/payment/paypal/cancel', [PaymentController::class, 'paypalCancel'])->name('payment.paypal.cancel');
+
 // Webhook routes (no auth needed)
 Route::post('/webhooks/mpesa', [PaymentController::class, 'callback'])->name('webhooks.mpesa');
+Route::post('/webhooks/stripe', [PaymentController::class, 'stripeWebhook'])->name('webhooks.stripe');

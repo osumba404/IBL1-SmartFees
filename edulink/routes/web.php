@@ -70,6 +70,7 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('/payments/{payment}', [StudentController::class, 'paymentDetails'])->name('payments.show');
         Route::get('/statements', [StudentController::class, 'statements'])->name('statements.index');
         Route::get('/statements/download', [StudentController::class, 'downloadStatement'])->name('statements.download');
+        Route::get('/statements/download-pdf', [StudentController::class, 'downloadStatementPDF'])->name('statements.download-pdf');
         Route::get('/settings', [StudentController::class, 'settings'])->name('settings');
         Route::put('/settings', [StudentController::class, 'updateSettings'])->name('settings.update');
         Route::get('/statements/download', [StudentController::class, 'downloadStatement'])

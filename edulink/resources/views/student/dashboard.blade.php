@@ -174,13 +174,13 @@
                         <a href="{{ route('payment.create') }}" class="btn btn-primary">
                             <i class="fas fa-credit-card me-2"></i>Make Payment
                         </a>
-                        <a href="#" class="btn btn-outline-primary">
+                        <a href="{{ route('student.statements.index') }}" class="btn btn-outline-primary">
                             <i class="fas fa-file-download me-2"></i>Download Statement
                         </a>
                         <a href="#" class="btn btn-outline-primary">
                             <i class="fas fa-history me-2"></i>Payment History
                         </a>
-                        <a href="#" class="btn btn-outline-primary">
+                        <a href="{{ route('student.profile') }}" class="btn btn-outline-primary">
                             <i class="fas fa-user-edit me-2"></i>Update Profile
                         </a>
                     </div>

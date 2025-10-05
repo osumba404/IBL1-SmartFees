@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
-use Stripe\Webhook;
+use Illuminate\Support\Facades\Log;
 
 class StripeService
 {
@@ -17,7 +17,7 @@ class StripeService
     {
         try {
             $paymentIntent = PaymentIntent::create([
-                'amount' => $amount * 100, // Convert to cents
+                'amount' => $amount * 100, // Stripe uses cents
                 'currency' => $currency,
                 'metadata' => $metadata,
                 'automatic_payment_methods' => [
@@ -31,35 +31,15 @@ class StripeService
                 'payment_intent_id' => $paymentIntent->id
             ];
         } catch (\Exception $e) {
+            Log::error('Stripe payment intent creation failed', [
+                'error' => $e->getMessage(),
+                'amount' => $amount
+            ]);
+
             return [
                 'success' => false,
                 'error' => $e->getMessage()
             ];
-        }
-    }
-
-    public function handleWebhook($payload, $signature)
-    {
-        try {
-            $event = Webhook::constructEvent(
-                $payload,
-                $signature,
-                config('services.stripe.webhook_secret')
-            );
-
-            // Handle the event
-            switch ($event->type) {
-                case 'payment_intent.succeeded':
-                    // Handle successful payment
-                    break;
-                case 'payment_intent.payment_failed':
-                    // Handle failed payment
-                    break;
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            return false;
         }
     }
 }

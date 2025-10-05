@@ -153,16 +153,21 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                KES {{ number_format($enrollment->total_fees_due, 2) }}
+                                                @php
+                                                    $totalFees = $enrollment->total_fees_due > 0 ? $enrollment->total_fees_due : ($enrollment->course->total_fee ?? 50000);
+                                                    $paidAmount = $enrollment->fees_paid;
+                                                    $outstanding = $totalFees - $paidAmount;
+                                                @endphp
+                                                KES {{ number_format($totalFees, 2) }}
                                             </td>
                                             <td>
                                                 <span class="text-success">
-                                                    KES {{ number_format($enrollment->fees_paid, 2) }}
+                                                    KES {{ number_format($paidAmount, 2) }}
                                                 </span>
                                             </td>
                                             <td>
-                                                <span class="text-{{ $enrollment->outstanding_balance > 0 ? 'danger' : 'success' }}">
-                                                    KES {{ number_format($enrollment->outstanding_balance, 2) }}
+                                                <span class="text-{{ $outstanding > 0 ? 'danger' : 'success' }}">
+                                                    KES {{ number_format(max(0, $outstanding), 2) }}
                                                 </span>
                                             </td>
                                             <td>
@@ -210,19 +215,24 @@
                                     </p>
                                     @endif
                                     
+                                    @php
+                                        $totalFees = $enrollment->total_fees_due > 0 ? $enrollment->total_fees_due : ($enrollment->course->total_fee ?? 50000);
+                                        $paidAmount = $enrollment->fees_paid;
+                                        $outstanding = $totalFees - $paidAmount;
+                                    @endphp
                                     <div class="row text-center mb-3">
                                         <div class="col-4">
                                             <div class="small text-muted">Total Fee</div>
-                                            <div class="fw-bold">KES {{ number_format($enrollment->total_fees_due, 2) }}</div>
+                                            <div class="fw-bold">KES {{ number_format($totalFees, 2) }}</div>
                                         </div>
                                         <div class="col-4">
                                             <div class="small text-muted">Paid</div>
-                                            <div class="fw-bold text-success">KES {{ number_format($enrollment->fees_paid, 2) }}</div>
+                                            <div class="fw-bold text-success">KES {{ number_format($paidAmount, 2) }}</div>
                                         </div>
                                         <div class="col-4">
                                             <div class="small text-muted">Outstanding</div>
-                                            <div class="fw-bold text-{{ $enrollment->outstanding_balance > 0 ? 'danger' : 'success' }}">
-                                                KES {{ number_format($enrollment->outstanding_balance, 2) }}
+                                            <div class="fw-bold text-{{ $outstanding > 0 ? 'danger' : 'success' }}">
+                                                KES {{ number_format(max(0, $outstanding), 2) }}
                                             </div>
                                         </div>
                                     </div>

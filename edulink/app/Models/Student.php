@@ -191,9 +191,16 @@ class Student extends Authenticatable
      */
     public function getFinancialSummary(): array
     {
-        // Calculate from enrollments directly
-        $totalOwed = $this->enrollments()->sum('total_fees_due');
-        $totalPaid = $this->enrollments()->sum('fees_paid');
+        // Calculate from enrollments with course fee fallback
+        $totalOwed = 0;
+        $totalPaid = 0;
+        
+        foreach ($this->enrollments()->with('course')->get() as $enrollment) {
+            $fees = $enrollment->total_fees_due > 0 ? $enrollment->total_fees_due : ($enrollment->course->total_fee ?? 50000);
+            $totalOwed += $fees;
+            $totalPaid += $enrollment->fees_paid ?? 0;
+        }
+        
         $outstandingBalance = $totalOwed - $totalPaid;
         
         $recentPayments = $this->completedPayments()

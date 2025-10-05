@@ -427,24 +427,9 @@
                     
                     <!-- Card Fields -->
                     <div class="phone-input" id="card-fields">
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <label for="card_number" class="form-label"><i class="bi bi-credit-card me-2"></i>Card Number</label>
-                                <input type="text" class="form-control" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="expiry" class="form-label">Expiry Date</label>
-                                <input type="text" class="form-control" id="expiry" name="expiry" placeholder="MM/YY" maxlength="5">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="cvv" class="form-label">CVV</label>
-                                <input type="text" class="form-control" id="cvv" name="cvv" placeholder="123" maxlength="4">
-                            </div>
-                            <div class="col-12">
-                                <label for="card_name" class="form-label">Cardholder Name</label>
-                                <input type="text" class="form-control" id="card_name" name="card_name" placeholder="John Doe">
-                            </div>
-                        </div>
+                        <label class="form-label"><i class="bi bi-credit-card me-2"></i>Card Details</label>
+                        <div id="stripe-card-element" class="form-control" style="padding: 12px;"></div>
+                        <small class="text-muted mt-2 d-block">Enter your card details securely</small>
                     </div>
                     
                     <!-- PayPal Fields -->
@@ -474,6 +459,7 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const paymentMethods = document.querySelectorAll('.payment-method');
@@ -506,10 +492,6 @@
                     
                     // Reset required fields
                     phoneInput.required = false;
-                    document.getElementById('card_number').required = false;
-                    document.getElementById('expiry').required = false;
-                    document.getElementById('cvv').required = false;
-                    document.getElementById('card_name').required = false;
                     document.getElementById('paypal_email').required = false;
                     
                     // Show relevant fields
@@ -518,10 +500,7 @@
                         phoneInput.required = true;
                     } else if (methodType === 'stripe') {
                         cardFields.classList.add('show');
-                        document.getElementById('card_number').required = true;
-                        document.getElementById('expiry').required = true;
-                        document.getElementById('cvv').required = true;
-                        document.getElementById('card_name').required = true;
+                        initializeStripeElements();
                     } else if (methodType === 'paypal') {
                         paypalFields.classList.add('show');
                         document.getElementById('paypal_email').required = true;
@@ -544,21 +523,41 @@
                 loading.classList.add('show');
                 payButton.disabled = true;
                 
-                // For M-Pesa, use AJAX to handle STK Push
-                if (formData.get('payment_method') === 'mpesa') {
+                // Handle different payment methods
+                if (formData.get('payment_method') === 'stripe') {
+                    this.handleStripePayment(formData);
+                    return;
+                } else if (formData.get('payment_method') === 'mpesa' || formData.get('payment_method') === 'paypal') {
+                    console.log('Processing payment:', formData.get('payment_method'));
+                    console.log('Form action:', this.action);
+                    
                     fetch(this.action, {
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
                         }
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        console.log('Response headers:', response.headers);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Response data:', data);
+                        
                         if (data.success) {
-                            // Redirect to pending page
+                            console.log('Redirecting to:', data.redirect_url);
+                            // Redirect to appropriate page
                             window.location.href = data.redirect_url;
                         } else {
+                            console.error('Payment failed:', data.message);
                             alert(data.message || 'Payment failed. Please try again.');
                             btnText.style.display = 'inline';
                             loading.classList.remove('show');
@@ -566,8 +565,8 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Error:', error);
-                        alert('Payment failed. Please try again.');
+                        console.error('Fetch error:', error);
+                        alert('Payment failed. Please try again. Error: ' + error.message);
                         btnText.style.display = 'inline';
                         loading.classList.remove('show');
                         payButton.disabled = false;
@@ -589,26 +588,7 @@
                 }
             });
             
-            // Card number formatting
-            document.getElementById('card_number').addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-                let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-                e.target.value = formattedValue;
-            });
-            
-            // Expiry date formatting
-            document.getElementById('expiry').addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, '');
-                if (value.length >= 2) {
-                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
-                }
-                e.target.value = value;
-            });
-            
-            // CVV formatting
-            document.getElementById('cvv').addEventListener('input', function(e) {
-                e.target.value = e.target.value.replace(/\D/g, '');
-            });
+
             
             // Phone number formatting
             phoneInput.addEventListener('input', function(e) {
@@ -618,6 +598,79 @@
                 }
                 e.target.value = value;
             });
+            
+            // Initialize Stripe
+            const stripe = Stripe('{{ config('services.stripe.key') }}');
+            let elements, cardElement;
+            
+            // Handle Stripe payment method selection
+            function initializeStripeElements() {
+                if (elements) return;
+                
+                elements = stripe.elements();
+                cardElement = elements.create('card', {
+                    style: {
+                        base: {
+                            fontSize: '16px',
+                            color: '#424770',
+                            '::placeholder': {
+                                color: '#aab7c4',
+                            },
+                        },
+                    },
+                });
+                
+                // Mount card element when stripe is selected
+                setTimeout(() => {
+                    const cardContainer = document.getElementById('stripe-card-element');
+                    if (cardContainer) {
+                        cardElement.mount('#stripe-card-element');
+                    }
+                }, 100);
+            }
+            
+            // Handle Stripe payment
+            paymentForm.handleStripePayment = async function(formData) {
+                try {
+                    // Create payment intent
+                    const response = await fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Confirm payment with Stripe
+                        const {error} = await stripe.confirmCardPayment(data.client_secret, {
+                            payment_method: {
+                                card: cardElement,
+                            }
+                        });
+                        
+                        if (error) {
+                            alert('Payment failed: ' + error.message);
+                        } else {
+                            window.location.href = '{{ route('payment.success') }}';
+                        }
+                    } else {
+                        alert(data.message || 'Payment failed');
+                    }
+                } catch (error) {
+                    console.error('Stripe payment error:', error);
+                    alert('Payment failed. Please try again.');
+                } finally {
+                    const btnText = payButton.querySelector('.btn-text');
+                    const loading = payButton.querySelector('.loading');
+                    btnText.style.display = 'inline';
+                    loading.classList.remove('show');
+                    payButton.disabled = false;
+                }
+            };
         });
     </script>
 </body>

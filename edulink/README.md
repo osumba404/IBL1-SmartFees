@@ -84,8 +84,9 @@
 - **Charts**: Chart.js for analytics visualization
 
 ### Payment Integrations
-- **M-Pesa**: Safaricom M-Pesa API integration
-- **Stripe**: International card payments
+- **M-Pesa**: Complete Safaricom Daraja API integration with STK Push
+- **Stripe**: Secure card payments with Stripe Elements (PCI compliant)
+- **PayPal**: Digital wallet integration with REST API
 - **Bank Transfer**: Manual verification system
 - **Cash Payments**: In-person payment recording
 
@@ -238,6 +239,24 @@ STRIPE_KEY=pk_test_your_key
 STRIPE_SECRET=sk_test_your_key
 PAYPAL_CLIENT_ID=your_test_client_id
 ```
+
+### 🧪 Testing Credentials
+
+#### M-Pesa (Sandbox)
+- **Consumer Key**: Configured for sandbox testing
+- **ShortCode**: 174379
+- **Test Phone**: Any Kenyan mobile number format (e.g., 254712345678)
+
+#### Stripe (Test Mode)
+- **Success Card**: `4242424242424242`
+- **Declined Card**: `4000000000000002`
+- **Authentication Required**: `4000002500003155`
+- **Expiry**: Any future date (e.g., 12/25)
+- **CVC**: Any 3-digit number (e.g., 123)
+
+#### PayPal (Sandbox)
+- **Test Account**: Configured for sandbox testing
+- **Mock Payments**: Fallback for testing without real credentials
 
 ### Default Admin Credentials
 - **Super Admin**: admin@edulink.ac.ke / admin123
@@ -527,17 +546,27 @@ php artisan test --coverage
 - **Reporting System**: Financial reports, student analytics, export functionality
 - **Permission-based Navigation**: Dynamic menu based on admin role permissions
 
-#### 💳 Payment System (Completely Rebuilt)
-- **Modern Payment Interface**: Professional, animated payment form with gradient design
-- **Multiple Payment Methods**: 
-  - **M-Pesa**: STK Push integration with phone number formatting
-  - **Stripe**: Credit card processing with real-time validation
-  - **PayPal**: Digital wallet integration
-  - **Bank Transfer**: Manual verification system
-- **Payment Method Specific Fields**: Dynamic form fields based on selected payment method
-- **Real-time Validation**: Input formatting, card number spacing, expiry date validation
-- **Success Page**: Animated success page with confetti effect and transaction details
-- **Webhook Support**: Payment gateway callback handling
+#### 💳 Payment System (Production Ready)
+- **M-Pesa Integration**: Complete STK Push implementation with real-time callbacks
+  - Live API integration with Safaricom Daraja API
+  - Automatic payment confirmation via webhooks
+  - Phone number validation and formatting
+  - Transaction status tracking and updates
+- **Stripe Integration**: Secure card processing with Stripe Elements
+  - PCI-compliant card input fields
+  - Real-time payment intent creation
+  - Webhook handling for payment confirmation
+  - Support for 3D Secure authentication
+- **PayPal Integration**: Digital wallet payment processing
+  - PayPal REST API integration
+  - Sandbox and production environment support
+  - Payment creation and execution flow
+  - Return and cancel URL handling
+- **Database Integration**: Comprehensive payment tracking
+  - Real-time balance updates
+  - Payment history and receipts
+  - Transaction logging and audit trails
+  - Automatic enrollment fee adjustments
 
 #### 🎨 User Interface & Experience
 - **Modern Design System**: Consistent color scheme, typography, and spacing
@@ -554,10 +583,10 @@ php artisan test --coverage
 - **Configuration Management**: Environment-based settings for payment gateways
 
 ### 🚧 In Progress
-- **Payment Gateway Integration**: Connecting to live payment APIs
 - **Email Notifications**: Payment confirmations and system alerts
 - **Advanced Reporting**: Enhanced analytics with charts and graphs
 - **File Upload System**: Document management for payment proofs
+- **Receipt Generation**: Automated PDF receipt creation and delivery
 
 ### 📋 Planned Features
 - **SMS Notifications**: M-Pesa payment confirmations
@@ -576,11 +605,13 @@ php artisan test --coverage
 - **Security**: Input validation, CSRF protection, and secure authentication
 
 ### 🎯 Recent Major Updates
-1. **Payment System Overhaul**: Complete rebuild with modern UI/UX
-2. **Mobile Responsiveness**: Full mobile optimization across all pages
-3. **Security Hardening**: Fixed critical vulnerabilities and improved authentication
-4. **User Experience**: Enhanced navigation, interactive elements, and visual feedback
-5. **Code Quality**: Improved structure, documentation, and maintainability
+1. **Complete Payment Integration**: M-Pesa, Stripe, and PayPal fully functional with live APIs
+2. **Real-time Payment Processing**: Webhook handling and automatic balance updates
+3. **Database Optimization**: Enhanced payment tracking with comprehensive audit trails
+4. **Security Implementation**: PCI-compliant card processing and secure authentication
+5. **Production Readiness**: All payment gateways tested and operational
+6. **Timezone Configuration**: Proper Africa/Nairobi timezone handling
+7. **PDF Statement Generation**: Professional fee statements with download functionality
 
 ## 🤝 Contributing
 

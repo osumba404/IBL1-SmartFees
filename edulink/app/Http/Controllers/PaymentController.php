@@ -22,6 +22,10 @@ class PaymentController extends Controller
         try {
             if ($request->payment_method === 'mpesa') {
                 return $this->processMpesa($request);
+            } elseif ($request->payment_method === 'paypal') {
+                return $this->processPaypal($request);
+            } elseif ($request->payment_method === 'stripe') {
+                return $this->processStripe($request);
             }
             
             return response()->json(['success' => false, 'message' => 'Payment method not supported']);
@@ -265,7 +269,7 @@ class PaymentController extends Controller
                 
                 $payment->status = 'completed';
                 $payment->gateway_transaction_id = $mpesaReceiptNumber;
-                $payment->payment_date = now();
+                $payment->payment_date = now()->setTimezone(config('app.timezone'));
                 $payment->payment_details = json_encode($data);
                 $payment->save();
                 
@@ -309,7 +313,7 @@ class PaymentController extends Controller
             if ($payment && $payment->status === 'pending') {
                 $payment->status = 'completed';
                 $payment->gateway_transaction_id = 'MPX' . time();
-                $payment->payment_date = now();
+                $payment->payment_date = now()->setTimezone(config('app.timezone'));
                 $payment->save();
                 
                 // Update student enrollment balance
@@ -332,6 +336,256 @@ class PaymentController extends Controller
         } catch (\Exception $e) {
             Log::error('Payment simulation error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Payment completion failed']);
+        }
+    }
+    
+    private function processPaypal(Request $request)
+    {
+        try {
+            Log::info('Processing PayPal payment', [
+                'amount' => $request->amount,
+                'email' => $request->paypal_email
+            ]);
+            
+            $paypalService = new \App\Services\PaypalService();
+            
+            // Create payment record
+            $payment = new Payment();
+            $payment->student_id = auth('student')->id() ?? 1;
+            $payment->amount = $request->amount ?? 1000;
+            $payment->payment_method = 'paypal';
+            $payment->status = 'pending';
+            $payment->payment_reference = 'PAY_' . time();
+            $payment->transaction_id = 'PP_' . time();
+            $payment->save();
+            
+            Log::info('Payment record created', ['payment_id' => $payment->id]);
+            
+            // Create PayPal payment
+            $returnUrl = route('payment.paypal.return', ['payment_id' => $payment->id]);
+            $cancelUrl = route('payment.paypal.cancel', ['payment_id' => $payment->id]);
+            
+            Log::info('PayPal URLs', [
+                'return_url' => $returnUrl,
+                'cancel_url' => $cancelUrl
+            ]);
+            
+            $result = $paypalService->createPayment(
+                $request->amount,
+                'USD',
+                $returnUrl,
+                $cancelUrl,
+                'School Fees Payment'
+            );
+            
+            Log::info('PayPal service result', $result);
+            
+            if ($result['success']) {
+                $payment->transaction_id = $result['payment_id'];
+                $payment->save();
+                
+                $response = [
+                    'success' => true,
+                    'redirect_url' => $result['approval_url']
+                ];
+                
+                Log::info('Sending success response', $response);
+                
+                return response()->json($response);
+            }
+            
+            $payment->status = 'failed';
+            $payment->save();
+            
+            $errorResponse = [
+                'success' => false,
+                'message' => $result['error'] ?? 'PayPal payment failed'
+            ];
+            
+            Log::error('PayPal payment failed', $errorResponse);
+            
+            return response()->json($errorResponse);
+            
+        } catch (\Exception $e) {
+            Log::error('PayPal payment exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'PayPal payment failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function paypalReturn(Request $request)
+    {
+        try {
+            $paymentId = $request->payment_id;
+            $paypalPaymentId = $request->paymentId;
+            $payerId = $request->PayerID;
+            
+            $payment = Payment::find($paymentId);
+            if (!$payment) {
+                return redirect()->route('payment.create')->with('error', 'Payment not found');
+            }
+            
+            $paypalService = new \App\Services\PaypalService();
+            $result = $paypalService->executePayment($paypalPaymentId, $payerId);
+            
+            if ($result['success']) {
+                $payment->status = 'completed';
+                $payment->gateway_transaction_id = $paypalPaymentId;
+                $payment->payment_date = now()->setTimezone(config('app.timezone'));
+                $payment->payment_details = json_encode($result['payment']);
+                $payment->save();
+                
+                // Update student enrollment balance
+                if ($payment->student_id) {
+                    $student = \App\Models\Student::find($payment->student_id);
+                    if ($student) {
+                        $enrollment = $student->enrollments()->first();
+                        if ($enrollment) {
+                            $enrollment->fees_paid += $payment->amount;
+                            $enrollment->save();
+                        }
+                    }
+                }
+                
+                return redirect()->route('payment.success')->with('success', 'Payment completed successfully');
+            }
+            
+            $payment->status = 'failed';
+            $payment->save();
+            
+            return redirect()->route('payment.create')->with('error', 'Payment execution failed');
+            
+        } catch (\Exception $e) {
+            Log::error('PayPal return processing error: ' . $e->getMessage());
+            return redirect()->route('payment.create')->with('error', 'Payment processing failed');
+        }
+    }
+    
+    public function paypalCancel(Request $request)
+    {
+        $paymentId = $request->payment_id;
+        $payment = Payment::find($paymentId);
+        
+        if ($payment) {
+            $payment->status = 'cancelled';
+            $payment->save();
+        }
+        
+        return redirect()->route('payment.create')->with('error', 'Payment was cancelled');
+    }
+    
+    private function processStripe(Request $request)
+    {
+        try {
+            Log::info('Processing Stripe payment', [
+                'amount' => $request->amount,
+                'card_number' => substr($request->card_number, -4)
+            ]);
+            
+            $stripeService = new \App\Services\StripeService();
+            
+            // Create payment record
+            $payment = new Payment();
+            $payment->student_id = auth('student')->id() ?? 1;
+            $payment->amount = $request->amount ?? 1000;
+            $payment->payment_method = 'stripe';
+            $payment->status = 'pending';
+            $payment->payment_reference = 'PAY_' . time();
+            $payment->transaction_id = 'ST_' . time();
+            $payment->save();
+            
+            // Create Stripe payment intent
+            $result = $stripeService->createPaymentIntent(
+                $request->amount,
+                'usd',
+                [
+                    'payment_id' => $payment->id,
+                    'student_id' => $payment->student_id
+                ]
+            );
+            
+            if ($result['success']) {
+                $payment->stripe_payment_intent_id = $result['payment_intent_id'];
+                $payment->save();
+                
+                return response()->json([
+                    'success' => true,
+                    'client_secret' => $result['client_secret'],
+                    'payment_id' => $payment->id
+                ]);
+            }
+            
+            $payment->status = 'failed';
+            $payment->save();
+            
+            return response()->json([
+                'success' => false,
+                'message' => $result['error'] ?? 'Stripe payment failed'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Stripe payment exception', [
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Stripe payment failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function stripeWebhook(Request $request)
+    {
+        try {
+            $payload = $request->getContent();
+            $sig_header = $request->header('stripe-signature');
+            $endpoint_secret = config('services.stripe.webhook_secret');
+            
+            if ($endpoint_secret) {
+                $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+            } else {
+                $event = json_decode($payload, true);
+            }
+            
+            if ($event['type'] === 'payment_intent.succeeded') {
+                $paymentIntent = $event['data']['object'];
+                $paymentId = $paymentIntent['metadata']['payment_id'] ?? null;
+                
+                if ($paymentId) {
+                    $payment = Payment::find($paymentId);
+                    if ($payment && $payment->status === 'pending') {
+                        $payment->status = 'completed';
+                        $payment->gateway_transaction_id = $paymentIntent['id'];
+                        $payment->payment_date = now()->setTimezone(config('app.timezone'));
+                        $payment->payment_details = json_encode($paymentIntent);
+                        $payment->save();
+                        
+                        // Update student enrollment balance
+                        if ($payment->student_id) {
+                            $student = \App\Models\Student::find($payment->student_id);
+                            if ($student) {
+                                $enrollment = $student->enrollments()->first();
+                                if ($enrollment) {
+                                    $enrollment->fees_paid += $payment->amount;
+                                    $enrollment->save();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return response()->json(['status' => 'success']);
+        } catch (\Exception $e) {
+            Log::error('Stripe webhook error: ' . $e->getMessage());
+            return response()->json(['error' => 'Webhook failed'], 400);
         }
     }
     
