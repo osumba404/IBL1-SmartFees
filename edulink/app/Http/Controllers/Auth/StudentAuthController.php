@@ -254,11 +254,18 @@ class StudentAuthController extends Controller
         if ($student) {
             $token = \Str::random(64);
             
-            // Store reset token (in production, use password_resets table)
-            \Cache::put('password_reset_' . $student->email, $token, 3600); // 1 hour
+            // Store reset token in database
+            \DB::table('password_resets')->updateOrInsert(
+                ['email' => $request->email],
+                [
+                    'email' => $request->email,
+                    'token' => \Hash::make($token),
+                    'created_at' => now()
+                ]
+            );
             
             $notificationService = new \App\Services\NotificationService();
-            $notificationService->sendPasswordResetNotification($request->email, $token);
+            $notificationService->sendPasswordResetNotification($student, $token);
         }
         
         // Always return success message for security
@@ -284,7 +291,34 @@ class StudentAuthController extends Controller
             'password' => 'required|confirmed|min:8'
         ]);
         
-        // Basic implementation - would need actual password reset logic
-        return redirect()->route('student.login')->with('success', 'Password reset successfully!');
+        // Find the password reset record
+        $passwordReset = \DB::table('password_resets')
+            ->where('email', $request->email)
+            ->first();
+        
+        if (!$passwordReset || !\Hash::check($request->token, $passwordReset->token)) {
+            return back()->withErrors(['email' => 'Invalid or expired password reset token.']);
+        }
+        
+        // Check if token is not expired (1 hour)
+        if (\Carbon\Carbon::parse($passwordReset->created_at)->addHour()->isPast()) {
+            \DB::table('password_resets')->where('email', $request->email)->delete();
+            return back()->withErrors(['email' => 'Password reset token has expired.']);
+        }
+        
+        // Update student password
+        $student = \App\Models\Student::where('email', $request->email)->first();
+        if ($student) {
+            $student->update([
+                'password' => \Hash::make($request->password)
+            ]);
+            
+            // Delete the password reset record
+            \DB::table('password_resets')->where('email', $request->email)->delete();
+            
+            return redirect()->route('student.login')->with('success', 'Password reset successfully! You can now login with your new password.');
+        }
+        
+        return back()->withErrors(['email' => 'Unable to reset password. Please try again.']);
     }
 }

@@ -31,16 +31,17 @@ class NotificationService
     /**
      * Send password reset notification
      */
-    public function sendPasswordResetNotification(string $email, string $token): void
+    public function sendPasswordResetNotification($student, string $token): void
     {
         if (config('services.notifications.email_enabled', true)) {
-            $resetUrl = url("/student/reset-password/{$token}?email=" . urlencode($email));
+            $resetUrl = url("/student/reset-password/{$token}?email=" . urlencode($student->email));
             
             Mail::send('emails.password-reset', [
                 'resetUrl' => $resetUrl,
-                'email' => $email
-            ], function ($message) use ($email) {
-                $message->to($email)
+                'student' => $student,
+                'email' => $student->email
+            ], function ($message) use ($student) {
+                $message->to($student->email)
                         ->subject('Reset Your Password - Edulink SmartFees');
             });
         }

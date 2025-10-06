@@ -21,7 +21,7 @@
         </div>
         
         <div class="content">
-            <p>Hello,</p>
+            <p>Hello {{ $student->first_name }} {{ $student->last_name }},</p>
             
             <p>You have requested to reset your password for your Edulink SmartFees account ({{ $email }}).</p>
             
