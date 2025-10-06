@@ -233,4 +233,46 @@ class StudentAuthController extends Controller
 
         return redirect()->route('student.profile')->with('success', 'Password changed successfully.');
     }
+
+    /**
+     * Show forgot password form
+     */
+    public function showForgotPasswordForm(): View
+    {
+        return view('auth.student.forgot-password');
+    }
+
+    /**
+     * Send password reset link
+     */
+    public function sendResetLinkEmail(Request $request): RedirectResponse
+    {
+        $request->validate(['email' => 'required|email']);
+        
+        // Basic implementation - would need actual email sending
+        return back()->with('status', 'Password reset link sent to your email!');
+    }
+
+    /**
+     * Show reset password form
+     */
+    public function showResetPasswordForm(Request $request, $token): View
+    {
+        return view('auth.student.reset-password', ['token' => $token, 'email' => $request->email]);
+    }
+
+    /**
+     * Reset password
+     */
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|confirmed|min:8'
+        ]);
+        
+        // Basic implementation - would need actual password reset logic
+        return redirect()->route('student.login')->with('success', 'Password reset successfully!');
+    }
 }

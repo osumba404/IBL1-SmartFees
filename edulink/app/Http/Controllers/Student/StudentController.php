@@ -560,6 +560,56 @@ class StudentController extends Controller
         }
     }
 
+    /**
+     * Import student data
+     */
+    public function import(Request $request)
+    {
+        $request->validate(['file' => 'required|mimes:xlsx,csv']);
+        
+        try {
+            // Basic import functionality - would need actual implementation
+            return redirect()->back()->with('success', 'Import functionality not yet implemented.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Import failed.');
+        }
+    }
+
+    /**
+     * Export student data
+     */
+    public function export()
+    {
+        try {
+            $student = Auth::guard('student')->user();
+            $data = [
+                'Student ID' => $student->student_id,
+                'Name' => $student->first_name . ' ' . $student->last_name,
+                'Email' => $student->email,
+                'Phone' => $student->phone,
+                'Status' => $student->status
+            ];
+            
+            $filename = 'student-data-' . $student->student_id . '.json';
+            return response()->json($data)
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Export failed.');
+        }
+    }
+
+    /**
+     * Download import template
+     */
+    public function downloadTemplate()
+    {
+        $template = "Student ID,First Name,Last Name,Email,Phone\nSTU20250001,John,Doe,john@example.com,+254700000000";
+        
+        return response($template)
+            ->header('Content-Type', 'text/csv')
+            ->header('Content-Disposition', 'attachment; filename="student-template.csv"');
+    }
+
 
 
 

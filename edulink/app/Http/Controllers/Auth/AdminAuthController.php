@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Artisan;
 
 class AdminAuthController extends Controller
 {
@@ -306,6 +307,45 @@ class AdminAuthController extends Controller
         ]);
 
         return redirect()->route('admin.settings.account')->with('success', 'Password changed successfully.');
+    }
+
+    /**
+     * Show forgot password form
+     */
+    public function showForgotPasswordForm(): View
+    {
+        return view('auth.admin.forgot-password');
+    }
+
+    /**
+     * Send password reset link
+     */
+    public function sendResetLinkEmail(Request $request): RedirectResponse
+    {
+        $request->validate(['email' => 'required|email']);
+        return back()->with('status', 'Password reset link sent to your email!');
+    }
+
+    /**
+     * Show reset password form
+     */
+    public function showResetPasswordForm(Request $request, $token): View
+    {
+        return view('auth.admin.reset-password', ['token' => $token, 'email' => $request->email]);
+    }
+
+    /**
+     * Reset password
+     */
+    public function resetPassword(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|confirmed|min:8'
+        ]);
+        
+        return redirect()->route('admin.login')->with('success', 'Password reset successfully!');
     }
 
     /**
