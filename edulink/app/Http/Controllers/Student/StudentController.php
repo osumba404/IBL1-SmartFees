@@ -919,6 +919,10 @@ public function getFeeDetails(StudentEnrollment $enrollment)
                 'message' => "Your enrollment for {$course->name} has been submitted. Please complete your payment to secure your spot.",
                 'notification_type' => 'enrollment', 
             ]);
+            
+            // Send enrollment confirmation email
+            $notificationService = new \App\Services\NotificationService();
+            $notificationService->sendEnrollmentConfirmation($student, $enrollment);
 
             \DB::commit();
 

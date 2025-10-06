@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Services\NotificationService;
 
 class PaymentController extends Controller
 {
@@ -283,6 +284,10 @@ class PaymentController extends Controller
                             $enrollment->save();
                             Log::info('Updated enrollment balance', ['student_id' => $student->id, 'amount' => $payment->amount]);
                         }
+                        
+                        // Send payment confirmation notification
+                        $notificationService = new NotificationService();
+                        $notificationService->sendPaymentConfirmation($payment);
                     }
                 }
                 

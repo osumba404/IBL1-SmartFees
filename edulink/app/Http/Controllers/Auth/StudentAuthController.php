@@ -249,8 +249,20 @@ class StudentAuthController extends Controller
     {
         $request->validate(['email' => 'required|email']);
         
-        // Basic implementation - would need actual email sending
-        return back()->with('status', 'Password reset link sent to your email!');
+        $student = \App\Models\Student::where('email', $request->email)->first();
+        
+        if ($student) {
+            $token = \Str::random(64);
+            
+            // Store reset token (in production, use password_resets table)
+            \Cache::put('password_reset_' . $student->email, $token, 3600); // 1 hour
+            
+            $notificationService = new \App\Services\NotificationService();
+            $notificationService->sendPasswordResetNotification($request->email, $token);
+        }
+        
+        // Always return success message for security
+        return back()->with('status', 'If an account with that email exists, a password reset link has been sent.');
     }
 
     /**

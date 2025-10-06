@@ -139,6 +139,8 @@ return [
     */
 
     'notifications' => [
+        'email_enabled' => env('EMAIL_NOTIFICATIONS_ENABLED', true),
+        'sms_enabled' => env('SMS_NOTIFICATIONS_ENABLED', false),
         'email' => [
             'enabled' => env('EMAIL_NOTIFICATIONS_ENABLED', true),
             'from_address' => env('MAIL_FROM_ADDRESS', 'noreply@edulink.ac.ke'),
@@ -159,6 +161,13 @@ return [
             'enabled' => env('IN_APP_NOTIFICATIONS_ENABLED', true),
             'retention_days' => env('NOTIFICATION_RETENTION_DAYS', 30),
         ],
+    ],
+
+    'sms' => [
+        'provider' => env('SMS_PROVIDER', 'africastalking'),
+        'api_key' => env('SMS_API_KEY'),
+        'username' => env('SMS_USERNAME'),
+        'sender_id' => env('SMS_SENDER_ID', 'EDULINK'),
     ],
 
     /*
