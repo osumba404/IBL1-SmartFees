@@ -9,18 +9,22 @@
         <div class="col-12">
             <div class="card bg-gradient-primary text-white">
                 <div class="card-body p-4">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h2 class="mb-1">Welcome back, {{ auth('student')->user()->first_name }}!</h2>
-                            <p class="mb-0 opacity-75">Student ID: {{ auth('student')->user()->student_id }}</p>
-                            <p class="mb-0 opacity-75">Enrolled since: {{ auth('student')->user()->enrollment_date->format('F Y') }}</p>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <div class="avatar avatar-xl">
-                                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                    <i class="fas fa-user fa-2x"></i>
+                    <div class="text-center">
+                        <h2 class="mb-1">Welcome back, {{ auth('student')->user()->first_name }}!</h2>
+                        <p class="mb-2 opacity-75">Student ID: {{ auth('student')->user()->student_id }}</p>
+                        <p class="mb-3 opacity-75">Enrolled since: {{ auth('student')->user()->enrollment_date->format('F Y') }}</p>
+                        
+                        <div class="avatar avatar-xl d-inline-block">
+                            @if(auth('student')->user()->profile_picture)
+                                <img src="{{ asset('storage/profile-pictures/' . auth('student')->user()->profile_picture) }}" 
+                                     alt="{{ auth('student')->user()->first_name }}" 
+                                     class="rounded-circle" 
+                                     style="width: 80px; height: 80px; object-fit: cover; border: 3px solid rgba(255,255,255,0.3);">
+                            @else
+                                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 1.8rem; font-weight: 600;">
+                                    {{ strtoupper(substr(auth('student')->user()->first_name, 0, 1) . substr(auth('student')->user()->last_name, 0, 1)) }}
                                 </div>
-                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -135,7 +139,7 @@
                                 <tbody>
                                     @foreach($financialSummary['recent_payments'] as $payment)
                                         <tr>
-                                            <td>{{ $payment->payment_date->format('M d, Y') }}</td>
+                                            <td>{{ $payment->payment_date ? $payment->payment_date->format('M d, Y') : 'N/A' }}</td>
                                             <td>KES {{ number_format($payment->amount, 2) }}</td>
                                             <td>
                                                 <span class="badge bg-light text-dark">

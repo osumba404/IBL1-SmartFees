@@ -60,15 +60,23 @@
                     <tbody>
                         @forelse($students as $student)
                             <tr>
-                                <td>{{ $student->admission_number }}</td>
+                                <td>#{{ $student->student_id }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="avatar me-2">
-                                            <img src="{{ $student->profile_photo_url }}" alt="{{ $student->name }}" class="rounded-circle" width="40" height="40">
+                                            @if($student->profile_picture)
+                                                <img src="{{ asset('storage/profile-pictures/' . $student->profile_picture) }}" 
+                                                     alt="{{ $student->first_name }} {{ $student->last_name }}" 
+                                                     class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                            @else
+                                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    {{ strtoupper(substr($student->first_name, 0, 1) . substr($student->last_name, 0, 1)) }}
+                                                </div>
+                                            @endif
                                         </div>
                                         <div>
-                                            <div class="fw-bold">{{ $student->name }}</div>
-                                            <small class="text-muted">#{{ $student->id }}</small>
+                                            <div class="fw-bold">{{ $student->first_name }} {{ $student->last_name }}</div>
+                                            <small class="text-muted">#{{ $student->student_id }}</small>
                                         </div>
                                     </div>
                                 </td>
@@ -85,11 +93,22 @@
                                 </td>
                                 <td>{{ $student->phone ?? 'N/A' }}</td>
                                 <td>
-                                    @if($student->is_active)
-                                        <span class="badge bg-success">Active</span>
-                                    @else
-                                        <span class="badge bg-secondary">Inactive</span>
-                                    @endif
+                                    @switch($student->status)
+                                        @case('active')
+                                            <span class="badge bg-success">Active</span>
+                                            @break
+                                        @case('pending_verification')
+                                            <span class="badge bg-warning">Pending</span>
+                                            @break
+                                        @case('suspended')
+                                            <span class="badge bg-danger">Suspended</span>
+                                            @break
+                                        @case('graduated')
+                                            <span class="badge bg-info">Graduated</span>
+                                            @break
+                                        @default
+                                            <span class="badge bg-secondary">Inactive</span>
+                                    @endswitch
                                 </td>
                                 <td>
                                     <div class="btn-group">

@@ -42,9 +42,11 @@ Route::prefix('student')->name('student.')->group(function () {
     Route::middleware(['auth:student', 'student.active', 'web'])->group(function () {
         Route::post('/logout', [StudentAuthController::class, 'logout'])->name('logout');
         Route::get('/dashboard', [StudentAuthController::class, 'dashboard'])->name('dashboard');
-        Route::get('/profile', [StudentAuthController::class, 'profile'])->name('profile');
-        Route::put('/profile', [StudentAuthController::class, 'updateProfile'])->name('profile.update');
-        Route::put('/password', [StudentAuthController::class, 'changePassword'])->name('password.change');
+        Route::get('/profile', [StudentController::class, 'profile'])->name('profile');
+        Route::put('/profile', [StudentController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/password', [StudentController::class, 'changePassword'])->name('password.change');
+        Route::put('/profile/picture', [StudentController::class, 'updateProfilePicture'])->name('profile.picture.update');
+        Route::delete('/profile/picture', [StudentController::class, 'removeProfilePicture'])->name('profile.picture.remove');
         Route::get('/enrollments/{enrollment}/fee-details', [StudentController::class, 'getFeeDetails'])
         ->name('enrollments.fee-details');
         Route::get('/enrollments/{enrollment}', [StudentController::class, 'showEnrollment'])->name('enrollments.show');
@@ -244,6 +246,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/admins', [AdminAuthController::class, 'adminManagement'])->name('admins.index');
             Route::post('/admins', [AdminAuthController::class, 'createAdmin'])->name('admins.create');
             Route::put('/admins/{admin}', [AdminAuthController::class, 'updateAdminPermissions'])->name('admins.update');
+            
+            // System maintenance routes
+            Route::post('/maintenance/clear-cache', [AdminAuthController::class, 'clearCache'])->name('maintenance.clear-cache');
+            Route::post('/maintenance/clear-routes', [AdminAuthController::class, 'clearRoutes'])->name('maintenance.clear-routes');
+            Route::post('/maintenance/clear-views', [AdminAuthController::class, 'clearViews'])->name('maintenance.clear-views');
+            Route::post('/maintenance/optimize', [AdminAuthController::class, 'optimizeApp'])->name('maintenance.optimize');
+            Route::post('/maintenance/migrate', [AdminAuthController::class, 'runMigrations'])->name('maintenance.migrate');
+            Route::post('/maintenance/seed', [AdminAuthController::class, 'seedDatabase'])->name('maintenance.seed');
         });
     });
 });

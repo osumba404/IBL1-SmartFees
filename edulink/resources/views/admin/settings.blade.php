@@ -203,39 +203,75 @@
 </div>
 
 <script>
-function clearCache() {
-    if (confirm('Clear application cache? This may temporarily slow down the application.')) {
-        // Implementation would require AJAX call to backend
-        alert('Cache clearing functionality requires backend implementation.');
+function makeMaintenanceRequest(url, confirmMessage, successMessage) {
+    if (confirm(confirmMessage)) {
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(successMessage || data.message);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Network error: ' + error.message);
+        });
     }
+}
+
+function clearCache() {
+    makeMaintenanceRequest(
+        '{{ route("admin.maintenance.clear-cache") }}',
+        'Clear application cache? This may temporarily slow down the application.',
+        'Application cache cleared successfully.'
+    );
 }
 
 function clearRoutes() {
-    if (confirm('Clear route cache? This will require routes to be re-cached.')) {
-        alert('Route cache clearing functionality requires backend implementation.');
-    }
+    makeMaintenanceRequest(
+        '{{ route("admin.maintenance.clear-routes") }}',
+        'Clear route cache? This will require routes to be re-cached.',
+        'Route cache cleared successfully.'
+    );
 }
 
 function clearViews() {
-    if (confirm('Clear view cache? Compiled views will be regenerated on next request.')) {
-        alert('View cache clearing functionality requires backend implementation.');
-    }
+    makeMaintenanceRequest(
+        '{{ route("admin.maintenance.clear-views") }}',
+        'Clear view cache? Compiled views will be regenerated on next request.',
+        'View cache cleared successfully.'
+    );
 }
 
 function optimizeApp() {
-    if (confirm('Optimize application? This will cache routes, views, and configuration.')) {
-        alert('Application optimization functionality requires backend implementation.');
-    }
+    makeMaintenanceRequest(
+        '{{ route("admin.maintenance.optimize") }}',
+        'Optimize application? This will cache routes, views, and configuration.',
+        'Application optimized successfully.'
+    );
 }
 
 function runMigrations() {
-    if (confirm('Run database migrations? This may modify the database structure.')) {
-        alert('Migration functionality requires backend implementation.');
-    }
+    makeMaintenanceRequest(
+        '{{ route("admin.maintenance.migrate") }}',
+        'Run database migrations? This may modify the database structure.',
+        'Database migrations completed successfully.'
+    );
 }
 
 function seedDatabase() {
-    alert('Database seeding functionality requires backend implementation.');
+    makeMaintenanceRequest(
+        '{{ route("admin.maintenance.seed") }}',
+        'Seed database with sample data? This will add test data to the database.',
+        'Database seeded successfully.'
+    );
 }
 
 function confirmAction(message, callback) {

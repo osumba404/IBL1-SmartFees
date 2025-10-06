@@ -47,6 +47,8 @@ class Student extends Authenticatable
         'total_fees_paid',
         'has_outstanding_fees',
         'last_payment_date',
+        'last_login_at',
+        'profile_picture',
     ];
 
     /**
@@ -69,6 +71,7 @@ class Student extends Authenticatable
             'enrollment_date' => 'date',
             'expected_graduation_date' => 'date',
             'last_payment_date' => 'date',
+            'last_login_at' => 'datetime',
             'total_fees_owed' => 'decimal:2',
             'total_fees_paid' => 'decimal:2',
             'has_outstanding_fees' => 'boolean',

@@ -389,6 +389,177 @@ class StudentController extends Controller
         return $enabledMethods;
     }
 
+    /**
+     * Display student profile
+     */
+    public function profile(): View
+    {
+        $student = Auth::guard('student')->user();
+        return view('student.profile', compact('student'));
+    }
+
+    /**
+     * Update student profile
+     */
+    public function updateProfile(Request $request)
+    {
+        $student = Auth::guard('student')->user();
+        
+        $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:students,email,' . $student->id,
+            'phone' => 'required|string|max:20',
+            'date_of_birth' => 'required|date',
+            'gender' => 'required|in:male,female,other',
+            'national_id' => 'required|string|max:20|unique:students,national_id,' . $student->id,
+            'emergency_contact' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $student->update($request->only([
+                'first_name', 'last_name', 'email', 'phone', 'date_of_birth',
+                'gender', 'national_id', 'emergency_contact', 'address'
+            ]));
+
+            return redirect()->back()->with('success', 'Profile updated successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to update profile. Please try again.');
+        }
+    }
+
+    /**
+     * Change student password
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|min:8|confirmed'
+        ]);
+
+        $student = Auth::guard('student')->user();
+
+        if (!\Hash::check($request->current_password, $student->password)) {
+            return redirect()->back()->with('error', 'Current password is incorrect.');
+        }
+
+        try {
+            $student->update([
+                'password' => \Hash::make($request->password)
+            ]);
+
+            return redirect()->back()->with('success', 'Password changed successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to change password. Please try again.');
+        }
+    }
+
+    /**
+     * Update student profile picture
+     */
+    public function updateProfilePicture(Request $request)
+    {
+        $request->validate([
+            'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        $student = Auth::guard('student')->user();
+
+        try {
+            // Delete old profile picture if exists
+            if ($student->profile_picture) {
+                $oldPath = storage_path('app/public/profile-pictures/' . $student->profile_picture);
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
+                }
+            }
+
+            // Process and store new image
+            $image = $request->file('profile_picture');
+            $filename = 'student_' . $student->id . '_' . time() . '.webp';
+            
+            // Create directory if it doesn't exist
+            $directory = storage_path('app/public/profile-pictures');
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            // Resize and convert to WebP
+            $imageResource = imagecreatefromstring(file_get_contents($image->getPathname()));
+            $resized = imagecreatetruecolor(300, 300);
+            imagecopyresampled($resized, $imageResource, 0, 0, 0, 0, 300, 300, imagesx($imageResource), imagesy($imageResource));
+            
+            $outputPath = $directory . '/' . $filename;
+            imagewebp($resized, $outputPath, 80);
+            
+            imagedestroy($imageResource);
+            imagedestroy($resized);
+
+            // Update student record
+            $student->update(['profile_picture' => $filename]);
+
+            return redirect()->back()->with('success', 'Profile picture updated successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to update profile picture. Please try again.');
+        }
+    }
+
+    /**
+     * Remove student profile picture
+     */
+    public function removeProfilePicture()
+    {
+        $student = Auth::guard('student')->user();
+
+        try {
+            if ($student->profile_picture) {
+                $filePath = storage_path('app/public/profile-pictures/' . $student->profile_picture);
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+                
+                $student->update(['profile_picture' => null]);
+            }
+
+            return response()->json(['success' => true, 'message' => 'Profile picture removed successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to remove profile picture'], 500);
+        }
+    }
+
+    /**
+     * Display student settings
+     */
+    public function settings(): View
+    {
+        $student = Auth::guard('student')->user();
+        return view('student.settings', compact('student'));
+    }
+
+    /**
+     * Update student settings
+     */
+    public function updateSettings(Request $request)
+    {
+        $student = Auth::guard('student')->user();
+        
+        $request->validate([
+            'notifications_email' => 'boolean',
+            'notifications_sms' => 'boolean',
+            'language' => 'string|in:en,sw',
+            'timezone' => 'string'
+        ]);
+
+        try {
+            $student->update($request->only(['notifications_email', 'notifications_sms', 'language', 'timezone']));
+            return redirect()->back()->with('success', 'Settings updated successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to update settings.');
+        }
+    }
+
 
 
 

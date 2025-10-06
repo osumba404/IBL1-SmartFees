@@ -71,13 +71,7 @@ class Admin extends Authenticatable
         ];
     }
 
-    /**
-     * Get the admin's full name.
-     */
-    public function getFullNameAttribute(): string
-    {
-        return trim($this->first_name . ' ' . $this->middle_name . ' ' . $this->last_name);
-    }
+
 
     /**
      * Check if admin is a super admin.

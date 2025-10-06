@@ -272,19 +272,22 @@ class AdminAuthController extends Controller
     {
         $admin = Auth::guard('admin')->user();
 
+        // Check if this is a password change request
+        if ($request->input('action') === 'change_password') {
+            return $this->changePassword($request);
+        }
+
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20', 'unique:admins,phone,' . $admin->id],
         ]);
 
         $admin->update($request->only([
-            'first_name',
-            'last_name',
+            'name',
             'phone'
         ]));
 
-        return redirect()->route('admin.profile')->with('success', 'Profile updated successfully.');
+        return redirect()->route('admin.settings.account')->with('success', 'Profile updated successfully.');
     }
 
     /**
@@ -302,7 +305,7 @@ class AdminAuthController extends Controller
             'password' => Hash::make($request->password)
         ]);
 
-        return redirect()->route('admin.profile')->with('success', 'Password changed successfully.');
+        return redirect()->route('admin.settings.account')->with('success', 'Password changed successfully.');
     }
 
     /**
@@ -324,6 +327,15 @@ class AdminAuthController extends Controller
         ];
 
         return view('admin.settings', compact('admin', 'settings'));
+    }
+
+    /**
+     * Display account settings
+     */
+    public function accountSettings(): View
+    {
+        $admin = Auth::guard('admin')->user();
+        return view('admin.account-settings', compact('admin'));
     }
 
     /**
@@ -354,8 +366,7 @@ class AdminAuthController extends Controller
         }
 
         $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.Admin::class],
             'phone' => ['nullable', 'string', 'max:20', 'unique:'.Admin::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -364,8 +375,7 @@ class AdminAuthController extends Controller
         ]);
 
         $newAdmin = Admin::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
+            'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
@@ -410,5 +420,119 @@ class AdminAuthController extends Controller
         ]);
 
         return redirect()->route('admin.admin-management')->with('success', 'Admin permissions updated successfully.');
+    }
+
+    /**
+     * Clear application cache
+     */
+    public function clearCache(): \Illuminate\Http\JsonResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        
+        if (!$admin->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('cache:clear');
+            return response()->json(['success' => true, 'message' => 'Application cache cleared successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to clear cache: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Clear route cache
+     */
+    public function clearRoutes(): \Illuminate\Http\JsonResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        
+        if (!$admin->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('route:clear');
+            return response()->json(['success' => true, 'message' => 'Route cache cleared successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to clear routes: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Clear view cache
+     */
+    public function clearViews(): \Illuminate\Http\JsonResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        
+        if (!$admin->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('view:clear');
+            return response()->json(['success' => true, 'message' => 'View cache cleared successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to clear views: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Optimize application
+     */
+    public function optimizeApp(): \Illuminate\Http\JsonResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        
+        if (!$admin->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('optimize');
+            return response()->json(['success' => true, 'message' => 'Application optimized successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to optimize: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Run database migrations
+     */
+    public function runMigrations(): \Illuminate\Http\JsonResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        
+        if (!$admin->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            return response()->json(['success' => true, 'message' => 'Database migrations completed successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to run migrations: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Seed database
+     */
+    public function seedDatabase(): \Illuminate\Http\JsonResponse
+    {
+        $admin = Auth::guard('admin')->user();
+        
+        if (!$admin->isSuperAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Access denied.'], 403);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+            return response()->json(['success' => true, 'message' => 'Database seeded successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to seed database: ' . $e->getMessage()], 500);
+        }
     }
 }

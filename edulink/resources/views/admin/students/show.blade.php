@@ -19,6 +19,34 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- Profile Picture Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex align-items-center">
+                                <div class="me-4">
+                                    @if($student->profile_picture)
+                                        <img src="{{ asset('storage/profile-pictures/' . $student->profile_picture) }}" 
+                                             alt="{{ $student->full_name }}" 
+                                             class="rounded-circle" 
+                                             style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #e9ecef;">
+                                    @else
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 120px; height: 120px; font-size: 2.5rem; border: 3px solid #e9ecef;">
+                                            {{ strtoupper(substr($student->first_name, 0, 1) . substr($student->last_name, 0, 1)) }}
+                                        </div>
+                                    @endif
+                                </div>
+                                <div>
+                                    <h4 class="mb-1">{{ $student->full_name }}</h4>
+                                    <p class="text-muted mb-1">Student ID: {{ $student->student_id }}</p>
+                                    <span class="badge bg-{{ $student->status === 'active' ? 'success' : ($student->status === 'suspended' ? 'danger' : 'warning') }} fs-6">
+                                        {{ ucfirst($student->status) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="row">
                         <div class="col-md-6">
                             <h6 class="text-primary">Personal Information</h6>

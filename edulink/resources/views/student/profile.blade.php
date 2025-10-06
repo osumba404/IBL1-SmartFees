@@ -15,6 +15,53 @@
     <div class="row">
         <!-- Profile Information -->
         <div class="col-lg-8">
+            <!-- Profile Picture Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-camera me-2"></i>Profile Picture
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        @if($student->profile_picture)
+                            <img src="{{ asset('storage/profile-pictures/' . $student->profile_picture) }}" 
+                                 alt="Profile Picture" class="rounded-circle" id="profilePreview"
+                                 style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #e9ecef;">
+                        @else
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto" 
+                                 style="width: 120px; height: 120px; font-size: 2.5rem;" id="profilePreview">
+                                {{ strtoupper(substr($student->first_name, 0, 1) . substr($student->last_name, 0, 1)) }}
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <form action="{{ route('student.profile.picture.update') }}" method="POST" enctype="multipart/form-data" id="profilePictureForm">
+                        @csrf
+                        @method('PUT')
+                        <div class="mb-3">
+                            <input type="file" class="form-control @error('profile_picture') is-invalid @enderror" 
+                                   name="profile_picture" id="profilePictureInput" accept="image/*" style="display: none;">
+                            @error('profile_picture')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('profilePictureInput').click()">
+                                <i class="bi bi-upload me-1"></i>Choose Photo
+                            </button>
+                            @if($student->profile_picture)
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeProfilePicture()">
+                                    <i class="bi bi-trash me-1"></i>Remove
+                                </button>
+                            @endif
+                        </div>
+                    </form>
+                    
+                    <small class="text-muted mt-2 d-block">Supported formats: JPG, PNG, GIF (Max: 2MB)</small>
+                </div>
+            </div>
+            
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
@@ -244,5 +291,61 @@ document.querySelectorAll('form').forEach(function(form) {
         }
     });
 });
+
+// Profile picture preview and upload
+document.getElementById('profilePictureInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        // Validate file size (2MB max)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size must be less than 2MB');
+            this.value = '';
+            return;
+        }
+        
+        // Validate file type
+        if (!file.type.match('image.*')) {
+            alert('Please select a valid image file');
+            this.value = '';
+            return;
+        }
+        
+        // Preview image
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('profilePreview');
+            preview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #e9ecef;">`;
+        };
+        reader.readAsDataURL(file);
+        
+        // Auto-submit form
+        document.getElementById('profilePictureForm').submit();
+    }
+});
+
+// Remove profile picture
+function removeProfilePicture() {
+    if (confirm('Are you sure you want to remove your profile picture?')) {
+        fetch('{{ route("student.profile.picture.remove") }}', {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to remove profile picture');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while removing the profile picture');
+        });
+    }
+}
 </script>
 @endpush

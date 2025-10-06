@@ -154,7 +154,7 @@ class AdminController extends Controller
         $admin = Auth::guard('admin')->user();
         $feeStructure->load(['course', 'semester']); // Eager load relationships
 
-        return view('admin.fees.show', compact('feeStructure', 'admin'));
+        return view('admin.fee-structures.show', compact('feeStructure', 'admin'));
     }
 
     /**
@@ -166,7 +166,7 @@ class AdminController extends Controller
         $courses = Course::where('status', 'active')->get();
         $semesters = Semester::where('status', 'active')->get();
 
-        return view('admin.fees.edit', compact('feeStructure', 'courses', 'semesters', 'admin'));
+        return view('admin.fee-structures.edit', compact('feeStructure', 'courses', 'semesters', 'admin'));
     }
 
     /**
@@ -237,14 +237,14 @@ class AdminController extends Controller
             'meal_plan_fee' => $request->meal_plan_fee ?? 0,
             'discount_amount' => $request->discount_amount ?? 0,
             'effective_from' => $request->effective_from,
-            'effective_until' => $request->effective_until,
+            'effective_until' => $request->effective_until ?: null,
             'late_payment_penalty_rate' => $request->late_payment_penalty_rate ?? 0,
             'late_payment_fixed_penalty' => $request->late_payment_fixed_penalty ?? 0,
             'grace_period_days' => $request->grace_period_days ?? 0,
             'allows_installments' => $request->boolean('allows_installments'),
-            'max_installments' => $request->max_installments,
+            'max_installments' => $request->max_installments ?: 1,
             'minimum_deposit_percentage' => $request->minimum_deposit_percentage ?? 20,
-            'minimum_deposit_amount' => $request->minimum_deposit_amount,
+            'minimum_deposit_amount' => $request->minimum_deposit_amount ?: null,
             'status' => $request->status,
         ]);
 

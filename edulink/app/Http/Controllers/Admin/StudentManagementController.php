@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Validation\Rules;
 
@@ -170,20 +171,48 @@ class StudentManagementController extends Controller
             'phone' => ['required', 'string', 'max:20', 'unique:students,phone,' . $student->id],
             'date_of_birth' => ['required', 'date', 'before:today'],
             'gender' => ['required', 'in:male,female,other'],
-            'nationality' => ['required', 'string', 'max:100'],
-            'id_number' => ['required', 'string', 'max:50', 'unique:students,id_number,' . $student->id],
-            'course_id' => ['required', 'exists:courses,id'],
-            'emergency_contact_name' => ['required', 'string', 'max:255'],
-            'emergency_contact_phone' => ['required', 'string', 'max:20'],
+            'national_id' => ['nullable', 'string', 'max:50', 'unique:students,national_id,' . $student->id],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
             'status' => ['required', 'in:active,pending_verification,suspended,inactive,graduated'],
+            'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'remove_picture' => ['nullable', 'boolean'],
         ]);
 
         $updateData = $request->only([
             'first_name', 'last_name', 'email', 'phone', 'date_of_birth',
-            'gender', 'nationality', 'id_number', 'course_id',
-            'emergency_contact_name', 'emergency_contact_phone', 'address', 'status'
+            'gender', 'national_id', 'emergency_contact_name', 'emergency_contact_phone', 'address', 'status'
         ]);
+
+        // Handle profile picture
+        if ($request->boolean('remove_picture') && $student->profile_picture) {
+            // Delete old picture
+            Storage::disk('public')->delete('profile-pictures/' . $student->profile_picture);
+            $updateData['profile_picture'] = null;
+        } elseif ($request->hasFile('profile_picture')) {
+            try {
+                \Log::info('Profile picture upload attempt', [
+                    'student_id' => $student->student_id,
+                    'file_name' => $request->file('profile_picture')->getClientOriginalName(),
+                    'file_size' => $request->file('profile_picture')->getSize(),
+                    'mime_type' => $request->file('profile_picture')->getMimeType()
+                ]);
+                
+                // Delete old picture if exists
+                if ($student->profile_picture) {
+                    Storage::disk('public')->delete('profile-pictures/' . $student->profile_picture);
+                }
+                
+                // Process and save new picture
+                $updateData['profile_picture'] = $this->processProfilePicture($request->file('profile_picture'), $student->student_id);
+                
+                \Log::info('Profile picture processed successfully', ['filename' => $updateData['profile_picture']]);
+            } catch (\Exception $e) {
+                \Log::error('Profile picture processing failed', ['error' => $e->getMessage()]);
+                return back()->withErrors(['profile_picture' => 'Failed to process profile picture: ' . $e->getMessage()]);
+            }
+        }
 
         // Set email verification if status is active
         if ($request->status === 'active' && !$student->email_verified_at) {
@@ -553,6 +582,78 @@ class StudentManagementController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('admin.students.index')
                 ->with('error', 'Import failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Process and convert profile picture to WebP format
+     */
+    private function processProfilePicture($file, $studentId): string
+    {
+        // Create filename
+        $filename = 'student_' . $studentId . '_' . time() . '.webp';
+        
+        // Ensure directory exists
+        $directory = storage_path('app/public/profile-pictures');
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        
+        try {
+            // Check if GD extension is available
+            if (!extension_loaded('gd')) {
+                throw new \Exception('GD extension not available');
+            }
+            
+            // Get file contents
+            $imageData = file_get_contents($file->getPathname());
+            
+            // Create image resource from string
+            $image = imagecreatefromstring($imageData);
+            
+            if ($image === false) {
+                throw new \Exception('Failed to create image from file. Supported formats: ' . implode(', ', gd_info()));
+            }
+            
+            // Get original dimensions
+            $originalWidth = imagesx($image);
+            $originalHeight = imagesy($image);
+            
+            // Calculate dimensions for square crop
+            $size = min($originalWidth, $originalHeight);
+            $x = ($originalWidth - $size) / 2;
+            $y = ($originalHeight - $size) / 2;
+            
+            // Create square canvas
+            $canvas = imagecreatetruecolor(300, 300);
+            
+            // Copy and resize image to canvas
+            imagecopyresampled($canvas, $image, 0, 0, $x, $y, 300, 300, $size, $size);
+            
+            // Save as WebP if supported, otherwise as JPEG
+            $path = $directory . '/' . $filename;
+            
+            if (function_exists('imagewebp')) {
+                imagewebp($canvas, $path, 80);
+            } else {
+                // Fallback to JPEG if WebP not supported
+                $filename = 'student_' . $studentId . '_' . time() . '.jpg';
+                $path = $directory . '/' . $filename;
+                imagejpeg($canvas, $path, 80);
+            }
+            
+            // Clean up
+            imagedestroy($image);
+            imagedestroy($canvas);
+            
+            return $filename;
+            
+        } catch (\Exception $e) {
+            // If image processing fails, just store the original file
+            $extension = $file->getClientOriginalExtension();
+            $filename = 'student_' . $studentId . '_' . time() . '.' . $extension;
+            $file->storeAs('profile-pictures', $filename, 'public');
+            return $filename;
         }
     }
 }
