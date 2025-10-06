@@ -357,7 +357,7 @@ class StudentManagementController extends Controller
             ]);
         }
 
-        StudentEnrollment::create([
+        $enrollment = StudentEnrollment::create([
             'student_id' => $student->id,
             'course_id' => $request->course_id,
             'semester_id' => $request->semester_id,
@@ -366,6 +366,10 @@ class StudentManagementController extends Controller
             'status' => 'active',
             'enrolled_at' => now(),
         ]);
+
+        // Send enrollment confirmation email
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->sendEnrollmentConfirmation($student, $enrollment);
 
         return back()->with('success', 'Student enrolled successfully.');
     }

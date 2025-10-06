@@ -56,6 +56,10 @@ class StudentAuthController extends Controller
 
         Auth::guard('student')->login($student);
 
+        // Send welcome email
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->sendWelcomeNotification($student);
+
         return redirect()->route('student.dashboard')->with('success', 'Registration successful!');
     }
 

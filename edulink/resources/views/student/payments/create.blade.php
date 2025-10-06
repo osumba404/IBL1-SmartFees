@@ -24,6 +24,10 @@
                         <div class="mb-3">
                             <label class="form-label">Course</label>
                             <input type="text" class="form-control" value="{{ $enrollment->course->name ?? 'N/A' }}" readonly>
+                            @if($enrollment)
+                            <input type="hidden" name="enrollment_id" value="{{ $enrollment->id }}">
+                            <input type="hidden" name="course_id" value="{{ $enrollment->course_id }}">
+                            @endif
                         </div>
                         
                         <div class="mb-3">

@@ -30,7 +30,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        $query = Payment::with(['student', 'enrollment.course', 'enrollment.semester']);
+        $query = Payment::with(['student', 'enrollment', 'enrollment.course', 'enrollment.semester', 'studentEnrollment', 'studentEnrollment.course', 'studentEnrollment.semester']);
         
         // Apply filters
         if ($request->filled('search')) {
@@ -126,7 +126,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+        if (!$admin->canManagePayments() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to verify payments.');
         }
 
@@ -172,7 +172,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+        if (!$admin->canManagePayments() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to process refunds.');
         }
 
@@ -250,7 +250,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+        if (!$admin->canManagePayments() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to verify payments.');
         }
 
@@ -292,11 +292,11 @@ class PaymentController extends Controller
     /**
      * Bulk update payment status
      */
-    public function bulkUpdateStatus(Request $request): RedirectResponse
+    public function bulkUpdate(Request $request): RedirectResponse
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+        if (!$admin->canManagePayments() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to update payments.');
         }
 
@@ -324,7 +324,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_view_reports && !$admin->is_super_admin) {
+        if (!$admin->canViewReports() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to export payments.');
         }
 
@@ -436,7 +436,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+        if (!$admin->canManagePayments() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to retry payments.');
         }
 
@@ -465,7 +465,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+        if (!$admin->canManagePayments() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to create manual payments.');
         }
 
@@ -515,7 +515,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+        if (!$admin->canManagePayments() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to create payments.');
         }
 
@@ -548,7 +548,7 @@ class PaymentController extends Controller
     {
         $admin = Auth::guard('admin')->user();
         
-        if (!$admin->can_manage_payments && !$admin->is_super_admin) {
+        if (!$admin->canManagePayments() && !$admin->isSuperAdmin()) {
             abort(403, 'Insufficient permissions to create payments.');
         }
 

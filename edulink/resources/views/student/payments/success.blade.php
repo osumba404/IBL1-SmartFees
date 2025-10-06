@@ -12,6 +12,18 @@
                     <h3 class="mt-3">Payment Successful!</h3>
                     <p class="text-muted">Your payment has been processed successfully.</p>
                     
+                    @if(isset($recentPayment) && $recentPayment)
+                    <div class="alert alert-info mt-3">
+                        <h6>Payment Details:</h6>
+                        <p class="mb-1"><strong>Amount:</strong> {{ config('services.college.currency_symbol', 'KSh') }} {{ number_format($recentPayment->amount, 2) }}</p>
+                        <p class="mb-1"><strong>Method:</strong> {{ $recentPayment->payment_method_display }}</p>
+                        <p class="mb-1"><strong>Reference:</strong> {{ $recentPayment->payment_reference }}</p>
+                        @if($recentPayment->enrollment && $recentPayment->enrollment->course)
+                        <p class="mb-0"><strong>Course:</strong> {{ $recentPayment->enrollment->course->name }}</p>
+                        @endif
+                    </div>
+                    @endif
+                    
                     <div class="mt-4">
                         <a href="{{ route('student.dashboard') }}" class="btn btn-primary">
                             Back to Dashboard

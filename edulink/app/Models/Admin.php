@@ -28,6 +28,7 @@ class Admin extends Authenticatable
         'employee_id',
         'role',
         'is_active',
+        'is_super_admin',
         'department',
         'position',
         'hire_date',
@@ -61,6 +62,7 @@ class Admin extends Authenticatable
             'last_login_at' => 'datetime',
             'locked_until' => 'datetime',
             'is_active' => 'boolean',
+            'is_super_admin' => 'boolean',
             'can_manage_students' => 'boolean',
             'can_manage_courses' => 'boolean',
             'can_manage_payments' => 'boolean',
@@ -78,7 +80,7 @@ class Admin extends Authenticatable
      */
     public function isSuperAdmin(): bool
     {
-        return $this->role === config('auth.admin_roles.super_admin', 'super_admin');
+        return $this->role === 'super_admin' || $this->is_super_admin === true;
     }
 
     /**

@@ -41,8 +41,23 @@ class NotificationService
                 'student' => $student,
                 'email' => $student->email
             ], function ($message) use ($student) {
-                $message->to($student->email)
+                $message->to($student->email, $student->first_name . ' ' . $student->last_name)
                         ->subject('Reset Your Password - Edulink SmartFees');
+            });
+        }
+    }
+
+    /**
+     * Send welcome notification for new students
+     */
+    public function sendWelcomeNotification(Student $student): void
+    {
+        if (config('services.notifications.email_enabled', true)) {
+            Mail::send('emails.welcome', [
+                'student' => $student
+            ], function ($message) use ($student) {
+                $message->to($student->email, $student->first_name . ' ' . $student->last_name)
+                        ->subject('Welcome to Edulink SmartFees');
             });
         }
     }
@@ -57,9 +72,29 @@ class NotificationService
                 'student' => $student,
                 'enrollment' => $enrollment
             ], function ($message) use ($student) {
-                $message->to($student->email)
+                $message->to($student->email, $student->first_name . ' ' . $student->last_name)
                         ->subject('Enrollment Confirmation - Edulink SmartFees');
             });
+        }
+    }
+
+    /**
+     * Send admin payment alert for large payments
+     */
+    public function sendAdminPaymentAlert(Payment $payment): void
+    {
+        if (config('services.notifications.email_enabled', true)) {
+            $adminEmails = ['finance@edulink.ac.ke', 'admin@edulink.ac.ke'];
+            
+            foreach ($adminEmails as $email) {
+                Mail::send('emails.admin-payment-alert', [
+                    'payment' => $payment,
+                    'student' => $payment->student
+                ], function ($message) use ($email) {
+                    $message->to($email)
+                            ->subject('Large Payment Alert - Edulink SmartFees');
+                });
+            }
         }
     }
 
@@ -96,9 +131,14 @@ class NotificationService
                 'student' => $student,
                 'payment' => $payment
             ], function ($message) use ($student) {
-                $message->to($student->email)
+                $message->to($student->email, $student->first_name . ' ' . $student->last_name)
                         ->subject('Payment Confirmation - Edulink SmartFees');
             });
+            
+            // Send admin alert for large payments
+            if ($payment->amount >= 10000) {
+                $this->sendAdminPaymentAlert($payment);
+            }
         } catch (\Exception $e) {
             Log::error('Failed to send payment confirmation email: ' . $e->getMessage());
         }

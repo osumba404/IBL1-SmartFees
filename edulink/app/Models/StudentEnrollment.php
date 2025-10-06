@@ -120,7 +120,7 @@ class StudentEnrollment extends Model
      */
     public function payments(): HasMany
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasMany(Payment::class, 'student_enrollment_id');
     }
 
     /**
@@ -194,8 +194,8 @@ class StudentEnrollment extends Model
     public function updatePaymentStatus(float $paymentAmount): void
     {
         $this->fees_paid += $paymentAmount;
-        $this->outstanding_balance = $this->total_fees_due - $this->fees_paid;
-        $this->fees_fully_paid = $this->outstanding_balance <= 0;
+        $newOutstandingBalance = $this->total_fees_due - $this->fees_paid;
+        $this->fees_fully_paid = $newOutstandingBalance <= 0;
 
         // Calculate next payment due date for installments
         if ($this->payment_plan === 'installments' && !$this->fees_fully_paid) {

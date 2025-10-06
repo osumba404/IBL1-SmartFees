@@ -123,7 +123,18 @@
                 <div class="card-body">
                     @if($payment->student)
                     <div class="text-center mb-3">
-                        <h5>{{ $payment->student->full_name }}</h5>
+                        @if($payment->student->profile_picture)
+                            <img src="{{ asset('storage/profile-pictures/' . $payment->student->profile_picture) }}" 
+                                 alt="Profile Picture" class="rounded-circle mb-2" width="80" height="80">
+                        @else
+                            <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
+                                 style="width: 80px; height: 80px;">
+                                <span class="text-white font-weight-bold" style="font-size: 24px;">
+                                    {{ strtoupper(substr($payment->student->first_name, 0, 1) . substr($payment->student->last_name, 0, 1)) }}
+                                </span>
+                            </div>
+                        @endif
+                        <h5>{{ $payment->student->getFullNameAttribute() }}</h5>
                         <p class="text-muted">{{ $payment->student->student_id }}</p>
                     </div>
                     <table class="table table-borderless table-sm">
@@ -207,23 +218,57 @@
     @endif
 </div>
 
+</div>
+
+<!-- Refund Modal -->
+<div class="modal fade" id="refundModal" tabindex="-1" role="dialog" aria-labelledby="refundModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="refundModalLabel">Process Refund</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="refundForm" method="POST" action="{{ route('admin.payments.refund', $payment->id) }}">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="refund_amount">Refund Amount</label>
+                        <input type="number" class="form-control" id="refund_amount" name="refund_amount" 
+                               max="{{ $payment->amount }}" step="0.01" required>
+                        <small class="form-text text-muted">Maximum refund: KSh {{ number_format($payment->amount, 2) }}</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="refund_reason">Refund Reason</label>
+                        <textarea class="form-control" id="refund_reason" name="refund_reason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Process Refund</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 function verifyPayment(paymentId) {
     if (confirm('Are you sure you want to verify this payment?')) {
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        
         fetch(`/admin/payments/${paymentId}/verify`, {
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json',
-            },
+            body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+        .then(response => {
+            if (response.ok) {
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                alert('Error verifying payment');
             }
         })
         .catch(error => {

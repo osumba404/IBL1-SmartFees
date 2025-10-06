@@ -27,10 +27,11 @@
             
             <div class="details">
                 <h3>Payment Details</h3>
+                <p><strong>Transaction ID:</strong> #{{ $payment->gateway_transaction_id ?? $payment->transaction_id }}</p>
                 <p><strong>Amount:</strong> <span class="amount">KES {{ number_format($payment->amount, 2) }}</span></p>
                 <p><strong>Payment Method:</strong> {{ ucfirst($payment->payment_method) }}</p>
                 <p><strong>Reference:</strong> {{ $payment->payment_reference }}</p>
-                <p><strong>Date:</strong> {{ $payment->created_at->format('F d, Y g:i A') }}</p>
+                <p><strong>Date:</strong> {{ $payment->created_at->format('M d, Y - H:i') }}</p>
                 <p><strong>Status:</strong> {{ ucfirst($payment->status) }}</p>
             </div>
             

@@ -177,9 +177,58 @@
                                 </div>
                             </td>
                             <td>
-                                {{ $payment->enrollment->course->name ?? 'N/A' }}
-                                @if($payment->enrollment->semester ?? null)
-                                <br><small class="text-muted">{{ $payment->enrollment->semester->name }}</small>
+                                @php
+                                    $enrollment = $payment->enrollment ?? $payment->studentEnrollment;
+                                    $course = $enrollment ? $enrollment->course : null;
+                                @endphp
+                                @if($course)
+                                    <div class="font-weight-bold">{{ $course->name }}</div>
+                                    <div class="text-muted small">{{ $course->code }}</div>
+                                @else
+                                    <span class="text-muted">No Course</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="font-weight-bold">{{ config('services.college.currency_symbol', 'KSh') }} {{ number_format($payment->amount, 2) }}</span>
+                                @if($payment->currency && $payment->currency !== 'KES')
+                                <br><small class="text-muted">{{ $payment->currency }}</small>
+                                @endif
+                            </td>
+                            <td>
+                                @if($payment->payment_method)
+                                    <span class="badge badge-info">{{ $payment->payment_method_display }}</span>
+                                @else
+                                    <span class="text-muted">Not Set</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ $payment->status_color }}">{{ ucfirst($payment->status) }}</span>
+                            </td>
+                            <td>
+                                <div>{{ $payment->created_at->format('M d, Y') }}</div>
+                                <small class="text-muted">{{ $payment->created_at->format('h:i A') }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    @if($payment->status === 'pending' && (auth('admin')->user()->canManagePayments() || auth('admin')->user()->isSuperAdmin()))
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="verifyPayment({{ $payment->id }})">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                    @endif
+                                </div>tEnrollment;
+                                    $course = $enrollment->course ?? null;
+                                    $semester = $enrollment->semester ?? null;
+                                @endphp
+                                @if($course)
+                                    {{ $course->name }}
+                                    @if($semester)
+                                    <br><small class="text-muted">{{ $semester->name }}</small>
+                                    @endif
+                                @else
+                                    <span class="text-muted">No Course</span>
                                 @endif
                             </td>
                             <td>
@@ -190,46 +239,34 @@
                                 <br><small class="text-muted">{{ ucfirst($payment->payment_type) }} Fee</small>
                                 @endif
                             </td>
-                            <td>
-                                <span class="badge badge-secondary">
-                                    {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}
-                                </span>
+                            <td class="text-dark">
+                                {{ $payment->payment_method ? ucfirst(str_replace('_', ' ', $payment->payment_method)) : 'Unknown' }}
                             </td>
-                            <td>
-                                @switch($payment->status)
-                                    @case('completed')
-                                        <span class="badge badge-success">Completed</span>
-                                        @break
-                                    @case('pending')
-                                        <span class="badge badge-warning">Pending</span>
-                                        @break
-                                    @case('failed')
-                                        <span class="badge badge-danger">Failed</span>
-                                        @break
-                                    @case('cancelled')
-                                        <span class="badge badge-secondary">Cancelled</span>
-                                        @break
-                                    @default
-                                        <span class="badge badge-light">{{ ucfirst($payment->status) }}</span>
-                                @endswitch
+                            <td class="text-dark">
+                                {{ $payment->status ? ucfirst($payment->status) : 'Unknown' }}
                             </td>
                             <td>
                                 <div>{{ $payment->created_at->format('M d, Y') }}</div>
                                 <small class="text-muted">{{ $payment->created_at->format('h:i A') }}</small>
                             </td>
                             <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-sm btn-outline-primary" title="View Details">
-                                        <i class="fas fa-eye"></i>
+                                <div class="btn-group-vertical btn-group-sm" role="group" style="min-width: 120px;">
+                                    <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-outline-primary btn-sm mb-1" title="View Details">
+                                        <i class="fas fa-eye"></i> View
                                     </a>
-                                    @if($payment->status === 'pending')
-                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="verifyPayment({{ $payment->id }})" title="Verify Payment">
-                                        <i class="fas fa-check"></i>
+                                    @if($payment->status === 'pending' && !$payment->is_verified)
+                                    <button type="button" class="btn btn-outline-success btn-sm mb-1" onclick="verifyPayment({{ $payment->id }})" title="Verify Payment">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                    @endif
+                                    @if($payment->status === 'completed')
+                                    <button type="button" class="btn btn-outline-warning btn-sm mb-1" onclick="showRefundModal({{ $payment->id }}, {{ $payment->amount }})" title="Process Refund">
+                                        <i class="fas fa-undo"></i> Refund
                                     </button>
                                     @endif
                                     @if(in_array($payment->status, ['pending', 'failed']))
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="cancelPayment({{ $payment->id }})" title="Cancel Payment">
-                                        <i class="fas fa-times"></i>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelPayment({{ $payment->id }})" title="Cancel Payment">
+                                        <i class="fas fa-times"></i> Cancel
                                     </button>
                                     @endif
                                 </div>
@@ -258,65 +295,123 @@
     </div>
 </div>
 
+<!-- Refund Modal -->
+<div class="modal fade" id="refundModal" tabindex="-1" role="dialog" aria-labelledby="refundModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="refundModalLabel">Process Refund</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="refundForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="refund_amount">Refund Amount</label>
+                        <input type="number" class="form-control" id="refund_amount" name="refund_amount" 
+                               step="0.01" required>
+                        <small class="form-text text-muted" id="maxRefundText"></small>
+                    </div>
+                    <div class="form-group">
+                        <label for="refund_reason">Refund Reason</label>
+                        <textarea class="form-control" id="refund_reason" name="refund_reason" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Process Refund</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
-$(document).ready(function() {
-    $('#paymentsTable').DataTable({
-        "pageLength": 25,
-        "order": [[ 6, "desc" ]],
-        "columnDefs": [
-            { "orderable": false, "targets": 7 }
-        ]
-    });
-});
+// DataTable initialization removed to avoid jQuery dependency
 
 function verifyPayment(paymentId) {
     if (confirm('Are you sure you want to verify this payment?')) {
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        
         fetch(`/admin/payments/${paymentId}/verify`, {
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json',
-            },
+            body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
+        .then(response => {
+            console.log('Verify response:', response);
+            location.reload();
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while verifying the payment.');
+            console.log('Verify error:', error);
+            alert('Error verifying payment');
         });
     }
+}
+
+function showRefundModal(paymentId, amount) {
+    document.getElementById('refundForm').action = `/admin/payments/${paymentId}/refund`;
+    document.getElementById('refund_amount').max = amount;
+    document.getElementById('refund_amount').value = '';
+    document.getElementById('refund_reason').value = '';
+    document.getElementById('maxRefundText').textContent = `Maximum refund: KSh ${amount.toLocaleString()}`;
+    
+    // Show modal using Bootstrap's modal method
+    const modal = new bootstrap.Modal(document.getElementById('refundModal'));
+    modal.show();
 }
 
 function cancelPayment(paymentId) {
     if (confirm('Are you sure you want to cancel this payment?')) {
-        fetch(`/admin/payments/${paymentId}/cancel`, {
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+        formData.append('payment_ids[]', paymentId);
+        formData.append('status', 'cancelled');
+        
+        fetch('/admin/payments/bulk-update', {
             method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json',
-            },
+            body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
+        .then(response => {
+            console.log('Cancel response:', response);
+            location.reload();
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while cancelling the payment.');
+            console.log('Cancel error:', error);
+            alert('Error cancelling payment');
         });
     }
 }
+
+// Handle refund form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const refundForm = document.getElementById('refundForm');
+    if (refundForm) {
+        refundForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Refund response:', response);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('refundModal'));
+                modal.hide();
+                location.reload();
+            })
+            .catch(error => {
+                console.log('Refund error:', error);
+                alert('Error processing refund');
+            });
+        });
+    }
+})
 </script>
 @endpush
 @endsection

@@ -361,7 +361,7 @@ class PaymentService
     public function verifyPayment(int $paymentId, array $verificationData = []): array
     {
         try {
-            $payment = Payment::findOrFail($paymentId);
+            $payment = Payment::with('enrollment')->findOrFail($paymentId);
             
             if ($payment->is_verified) {
                 return [
@@ -369,6 +369,8 @@ class PaymentService
                     'message' => 'Payment is already verified.'
                 ];
             }
+            
+            DB::beginTransaction();
             
             $payment->update([
                 'is_verified' => true,
@@ -381,8 +383,18 @@ class PaymentService
             
             // Update enrollment payment status if enrollment exists
             if ($payment->enrollment) {
-                $payment->enrollment->updatePaymentStatus($payment->amount);
+                try {
+                    $payment->enrollment->updatePaymentStatus($payment->amount);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to update enrollment payment status', [
+                        'payment_id' => $payment->id,
+                        'enrollment_id' => $payment->enrollment->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
+            
+            DB::commit();
             
             return [
                 'success' => true,
@@ -390,6 +402,13 @@ class PaymentService
             ];
             
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Payment verification failed', [
+                'payment_id' => $paymentId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return [
                 'success' => false,
                 'message' => 'Payment verification failed: ' . $e->getMessage()

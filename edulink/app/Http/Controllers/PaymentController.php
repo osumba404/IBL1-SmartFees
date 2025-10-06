@@ -13,20 +13,34 @@ class PaymentController extends Controller
     public function create()
     {
         $student = auth('student')->user();
-        $enrollment = $student->enrollments()->first();
+        $enrollment = $student->enrollments()->with('course')->first();
         
-        return view('payment.create', compact('student', 'enrollment'));
+        // Check if there's payment data from the student portal
+        $paymentData = session('payment_data');
+        $existingPayment = null;
+        
+        if ($paymentData && isset($paymentData['payment_id'])) {
+            $existingPayment = Payment::find($paymentData['payment_id']);
+        }
+        
+        return view('payment.create', compact('student', 'enrollment', 'paymentData', 'existingPayment'));
     }
     
     public function process(Request $request)
     {
         try {
+            // Check if there's an existing payment record to update
+            $existingPayment = null;
+            if ($request->payment_id) {
+                $existingPayment = Payment::find($request->payment_id);
+            }
+            
             if ($request->payment_method === 'mpesa') {
-                return $this->processMpesa($request);
+                return $this->processMpesa($request, $existingPayment);
             } elseif ($request->payment_method === 'paypal') {
-                return $this->processPaypal($request);
+                return $this->processPaypal($request, $existingPayment);
             } elseif ($request->payment_method === 'stripe') {
-                return $this->processStripe($request);
+                return $this->processStripe($request, $existingPayment);
             }
             
             return response()->json(['success' => false, 'message' => 'Payment method not supported']);
@@ -35,7 +49,7 @@ class PaymentController extends Controller
         }
     }
     
-    private function processMpesa(Request $request)
+    private function processMpesa(Request $request, $existingPayment = null)
     {
         try {
             // Validate phone number first
@@ -46,15 +60,30 @@ class PaymentController extends Controller
                 ]);
             }
             
-            // Create minimal payment record
-            $payment = new Payment();
-            $payment->student_id = auth('student')->id() ?? 1;
-            $payment->amount = $request->amount ?? 1000;
-            $payment->payment_method = 'mpesa';
-            $payment->status = 'pending';
-            $payment->payment_reference = 'PAY_' . time();
-            $payment->transaction_id = 'REQ_' . time();
-            $payment->save();
+            // Use existing payment or create new one
+            if ($existingPayment && $existingPayment->status === 'pending') {
+                $payment = $existingPayment;
+                $payment->mpesa_phone_number = $this->formatPhone($request->phone);
+                $payment->save();
+            } else {
+                // Create payment record with enrollment
+                $student = auth('student')->user();
+                $enrollment = $student->enrollments()->with('course')->first();
+                
+                $payment = new Payment();
+                $payment->student_id = $student->id;
+                $payment->student_enrollment_id = $enrollment ? $enrollment->id : null;
+                $payment->amount = $request->amount ?? 1000;
+                $payment->currency = 'KES';
+                $payment->payment_method = 'mpesa';
+                $payment->payment_type = 'tuition';
+                $payment->status = 'pending';
+                $payment->payment_reference = Payment::generatePaymentReference();
+                $payment->transaction_id = 'REQ_' . time();
+                $payment->mpesa_phone_number = $this->formatPhone($request->phone);
+                $payment->payment_date = now();
+                $payment->save();
+            }
             
             // Initiate STK Push
             $stkResult = $this->initiateSTKPush($request->phone, $request->amount, $payment->id);
@@ -331,6 +360,11 @@ class PaymentController extends Controller
                             $enrollment->save();
                             Log::info('Updated enrollment balance', ['student_id' => $student->id, 'amount' => $payment->amount]);
                         }
+                        
+                        // Send payment confirmation notification
+                        $notificationService = new NotificationService();
+                        $notificationService->sendPaymentConfirmation($payment);
+                        Log::info('Payment confirmation email sent', ['student_email' => $student->email]);
                     }
                 }
                 
@@ -344,7 +378,7 @@ class PaymentController extends Controller
         }
     }
     
-    private function processPaypal(Request $request)
+    private function processPaypal(Request $request, $existingPayment = null)
     {
         try {
             Log::info('Processing PayPal payment', [
@@ -354,15 +388,27 @@ class PaymentController extends Controller
             
             $paypalService = new \App\Services\PaypalService();
             
-            // Create payment record
-            $payment = new Payment();
-            $payment->student_id = auth('student')->id() ?? 1;
-            $payment->amount = $request->amount ?? 1000;
-            $payment->payment_method = 'paypal';
-            $payment->status = 'pending';
-            $payment->payment_reference = 'PAY_' . time();
-            $payment->transaction_id = 'PP_' . time();
-            $payment->save();
+            // Use existing payment or create new one
+            if ($existingPayment && $existingPayment->status === 'pending') {
+                $payment = $existingPayment;
+            } else {
+                // Create payment record with enrollment
+                $student = auth('student')->user();
+                $enrollment = $student->enrollments()->with('course')->first();
+                
+                $payment = new Payment();
+                $payment->student_id = $student->id;
+                $payment->student_enrollment_id = $enrollment ? $enrollment->id : null;
+                $payment->amount = $request->amount ?? 1000;
+                $payment->currency = 'USD';
+                $payment->payment_method = 'paypal';
+                $payment->payment_type = 'tuition';
+                $payment->status = 'pending';
+                $payment->payment_reference = Payment::generatePaymentReference();
+                $payment->transaction_id = 'PP_' . time();
+                $payment->payment_date = now();
+                $payment->save();
+            }
             
             Log::info('Payment record created', ['payment_id' => $payment->id]);
             
@@ -455,6 +501,10 @@ class PaymentController extends Controller
                             $enrollment->fees_paid += $payment->amount;
                             $enrollment->save();
                         }
+                        
+                        // Send payment confirmation notification
+                        $notificationService = new NotificationService();
+                        $notificationService->sendPaymentConfirmation($payment);
                     }
                 }
                 
@@ -485,7 +535,7 @@ class PaymentController extends Controller
         return redirect()->route('payment.create')->with('error', 'Payment was cancelled');
     }
     
-    private function processStripe(Request $request)
+    private function processStripe(Request $request, $existingPayment = null)
     {
         try {
             Log::info('Processing Stripe payment', [
@@ -495,15 +545,27 @@ class PaymentController extends Controller
             
             $stripeService = new \App\Services\StripeService();
             
-            // Create payment record
-            $payment = new Payment();
-            $payment->student_id = auth('student')->id() ?? 1;
-            $payment->amount = $request->amount ?? 1000;
-            $payment->payment_method = 'stripe';
-            $payment->status = 'pending';
-            $payment->payment_reference = 'PAY_' . time();
-            $payment->transaction_id = 'ST_' . time();
-            $payment->save();
+            // Use existing payment or create new one
+            if ($existingPayment && $existingPayment->status === 'pending') {
+                $payment = $existingPayment;
+            } else {
+                // Create payment record with enrollment
+                $student = auth('student')->user();
+                $enrollment = $student->enrollments()->with('course')->first();
+                
+                $payment = new Payment();
+                $payment->student_id = $student->id;
+                $payment->student_enrollment_id = $enrollment ? $enrollment->id : null;
+                $payment->amount = $request->amount ?? 1000;
+                $payment->currency = 'USD';
+                $payment->payment_method = 'stripe';
+                $payment->payment_type = 'tuition';
+                $payment->status = 'pending';
+                $payment->payment_reference = Payment::generatePaymentReference();
+                $payment->transaction_id = 'ST_' . time();
+                $payment->payment_date = now();
+                $payment->save();
+            }
             
             // Create Stripe payment intent
             $result = $stripeService->createPaymentIntent(
@@ -581,6 +643,10 @@ class PaymentController extends Controller
                                     $enrollment->fees_paid += $payment->amount;
                                     $enrollment->save();
                                 }
+                                
+                                // Send payment confirmation notification
+                                $notificationService = new NotificationService();
+                                $notificationService->sendPaymentConfirmation($payment);
                             }
                         }
                     }
