@@ -119,12 +119,12 @@
 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="enrollment_open" class="form-label">Enrollment Status <span class="text-danger">*</span></label>
-                        <select class="form-select @error('enrollment_open') is-invalid @enderror" id="enrollment_open" name="enrollment_open" required>
-                            <option value="yes" {{ old('enrollment_open') == 'yes' ? 'selected' : '' }}>Open</option>
-                            <option value="no" {{ old('enrollment_open') == 'no' ? 'selected' : '' }}>Closed</option>
+                        <label for="is_active" class="form-label">Enrollment Status <span class="text-danger">*</span></label>
+                        <select class="form-select @error('is_active') is-invalid @enderror" id="is_active" name="is_active" required>
+                            <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Open</option>
+                            <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Closed</option>
                         </select>
-                        @error('enrollment_open')
+                        @error('is_active')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>

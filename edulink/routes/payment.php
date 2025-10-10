@@ -6,7 +6,8 @@ use App\Http\Controllers\PaymentController;
 // Payment routes
 Route::middleware('auth:student')->group(function () {
     Route::get('/payment', [PaymentController::class, 'create'])->name('payment.create');
-    Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process');
+    Route::post('/payment/process', [PaymentController::class, 'process'])->name('payment.process.post');
+    Route::get('/payment/process/{payment}', [PaymentController::class, 'processPayment'])->name('payment.process');
     Route::get('/payment/pending/{paymentId}', [PaymentController::class, 'pending'])->name('payment.pending');
     Route::get('/payment/status/{paymentId}', [PaymentController::class, 'status'])->name('payment.status');
     Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');

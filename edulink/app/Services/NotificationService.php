@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Student;
 use App\Models\Payment;
+use App\Models\PaymentNotification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +17,15 @@ class NotificationService
     public function sendPaymentConfirmation(Payment $payment): void
     {
         $student = $payment->student;
+        
+        // Create in-app notification
+        PaymentNotification::create([
+            'student_id' => $student->id,
+            'payment_id' => $payment->id,
+            'title' => 'Payment Confirmed',
+            'message' => "Your payment of KES " . number_format($payment->amount, 2) . " via " . ucfirst($payment->payment_method) . " has been confirmed. Receipt: {$payment->gateway_transaction_id}",
+            'notification_type' => 'payment_confirmed',
+        ]);
         
         // Send email notification
         if (config('services.notifications.email_enabled', true)) {
@@ -33,6 +43,14 @@ class NotificationService
      */
     public function sendPasswordResetNotification($student, string $token): void
     {
+        // Create in-app notification
+        PaymentNotification::create([
+            'student_id' => $student->id,
+            'title' => 'Password Reset Request',
+            'message' => 'A password reset request was made for your account. Check your email for reset instructions.',
+            'notification_type' => 'password_reset',
+        ]);
+        
         if (config('services.notifications.email_enabled', true)) {
             $resetUrl = url("/student/reset-password/{$token}?email=" . urlencode($student->email));
             
@@ -52,6 +70,14 @@ class NotificationService
      */
     public function sendWelcomeNotification(Student $student): void
     {
+        // Create in-app notification
+        PaymentNotification::create([
+            'student_id' => $student->id,
+            'title' => 'Welcome to Edulink SmartFees',
+            'message' => "Welcome {$student->first_name}! Your account has been created successfully. You can now enroll in courses and manage your payments.",
+            'notification_type' => 'welcome',
+        ]);
+        
         if (config('services.notifications.email_enabled', true)) {
             Mail::send('emails.welcome', [
                 'student' => $student
@@ -67,6 +93,14 @@ class NotificationService
      */
     public function sendEnrollmentConfirmation(Student $student, $enrollment): void
     {
+        // Create in-app notification
+        PaymentNotification::create([
+            'student_id' => $student->id,
+            'title' => 'Enrollment Confirmed',
+            'message' => "Your enrollment in {$enrollment->course->name} has been confirmed. Enrollment Number: {$enrollment->enrollment_number}",
+            'notification_type' => 'enrollment_confirmed',
+        ]);
+        
         if (config('services.notifications.email_enabled', true)) {
             Mail::send('emails.enrollment-confirmation', [
                 'student' => $student,

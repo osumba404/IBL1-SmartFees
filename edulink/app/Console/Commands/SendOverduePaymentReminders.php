@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Student;
+use App\Models\PaymentNotification;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 
@@ -45,7 +46,17 @@ class SendOverduePaymentReminders extends Command
             $outstandingBalance = $totalOwed - $totalPaid;
             
             if ($outstandingBalance > 0) {
+                // Send email reminder
                 $notificationService->sendPaymentReminder($student, $outstandingBalance);
+                
+                // Create in-app notification
+                PaymentNotification::create([
+                    'student_id' => $student->id,
+                    'title' => 'Overdue Payment Notice',
+                    'message' => "Your payment of KES " . number_format($outstandingBalance, 2) . " is overdue. Please make your payment immediately to avoid additional charges.",
+                    'notification_type' => 'payment_overdue',
+                ]);
+                
                 $remindersSent++;
                 $this->info("Reminder sent to: {$student->first_name} {$student->last_name} (KES " . number_format($outstandingBalance, 2) . ")");
             }

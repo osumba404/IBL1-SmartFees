@@ -366,8 +366,11 @@
         </div>
         
         <div class="payment-body">
-            <form action="{{ route('payment.process') }}" method="POST" id="paymentForm">
+            <form action="{{ route('payment.process.post') }}" method="POST" id="paymentForm">
                 @csrf
+                @if($existingPayment)
+                    <input type="hidden" name="payment_id" value="{{ $existingPayment->id }}">
+                @endif
                 
                 <div class="form-section">
                     <h3><i class="bi bi-person-circle"></i>Student Information</h3>
@@ -393,8 +396,15 @@
                     <h3><i class="bi bi-currency-dollar"></i>Payment Amount</h3>
                     <div class="input-group">
                         <span class="input-group-text" style="background: #f1f5f9; border: 2px solid var(--border); border-right: none; border-radius: 12px 0 0 12px; font-weight: 600;">KSh</span>
-                        <input type="number" step="0.01" min="1" class="form-control" id="amount" name="amount" value="1000" required style="border-left: none; border-radius: 0 12px 12px 0;">
+                        <input type="number" step="0.01" min="1" class="form-control" id="amount" name="amount" 
+                               value="{{ $paymentData['amount'] ?? $existingPayment->amount ?? 1000 }}" 
+                               {{ $existingPayment ? 'readonly' : '' }} required 
+                               style="border-left: none; border-radius: 0 12px 12px 0;">
                     </div>
+                    @if($existingPayment)
+                        <small class="text-muted mt-2 d-block">Amount is fixed for this enrollment payment</small>
+                        <input type="hidden" name="payment_id" value="{{ $existingPayment->id }}">
+                    @endif
                 </div>
                 
                 <div class="form-section">
@@ -416,13 +426,15 @@
                             <div class="desc">Digital Wallet</div>
                         </div>
                     </div>
-                    <input type="hidden" name="payment_method" id="payment_method" required>
+                    <input type="hidden" name="payment_method" id="payment_method" 
+                           value="{{ $paymentData['payment_method'] ?? $existingPayment->payment_method ?? '' }}" required>
                     
                     <!-- M-Pesa Fields -->
                     <div class="phone-input" id="mpesa-phone">
                         <label for="phone" class="form-label"><i class="bi bi-phone me-2"></i>M-Pesa Phone Number</label>
-                        <input type="tel" class="form-control" id="phone" name="phone" placeholder="254700000000">
-                        <small class="text-muted mt-2 d-block">Enter your M-Pesa registered phone number</small>
+                        <input type="tel" class="form-control" id="phone" name="phone" 
+                               value="{{ $student->phone ?? '' }}" placeholder="254700000000">
+                        <small class="text-muted mt-2 d-block">Phone number from your profile. You can edit if needed.</small>
                     </div>
                     
                     <!-- Card Fields -->
@@ -469,6 +481,15 @@
             const payButton = document.getElementById('payButton');
             const paymentForm = document.getElementById('paymentForm');
             
+            // Pre-select payment method if exists
+            const preselectedMethod = paymentMethodInput.value;
+            if (preselectedMethod) {
+                const methodElement = document.querySelector(`[data-method="${preselectedMethod}"]`);
+                if (methodElement) {
+                    methodElement.click();
+                }
+            }
+            
             paymentMethods.forEach(method => {
                 method.addEventListener('click', function() {
                     // Remove selected class from all methods
@@ -498,6 +519,10 @@
                     if (methodType === 'mpesa') {
                         mpesaPhoneField.classList.add('show');
                         phoneInput.required = true;
+                        // Auto-populate with student phone if empty
+                        if (!phoneInput.value && '{{ $student->phone }}') {
+                            phoneInput.value = '{{ $student->phone }}';
+                        }
                     } else if (methodType === 'stripe') {
                         cardFields.classList.add('show');
                         initializeStripeElements();
@@ -508,6 +533,16 @@
                     
                     // Enable pay button
                     payButton.disabled = false;
+                    
+                    // Update button text based on method
+                    const btnText = payButton.querySelector('.btn-text');
+                    if (methodType === 'mpesa') {
+                        btnText.textContent = 'Pay with M-Pesa';
+                    } else if (methodType === 'stripe') {
+                        btnText.textContent = 'Pay with Card';
+                    } else if (methodType === 'paypal') {
+                        btnText.textContent = 'Pay with PayPal';
+                    }
                 });
             });
             

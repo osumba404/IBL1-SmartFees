@@ -66,20 +66,44 @@
                                     $iconBg = 'bg-primary';
                                     switch ($notification->notification_type) {
                                         case 'enrollment':
+                                        case 'enrollment_confirmed':
                                             $iconClass = 'bi-person-check';
                                             $iconBg = 'bg-success';
                                             break;
                                         case 'payment_reminder':
+                                        case 'payment_overdue':
                                             $iconClass = 'bi-alarm';
                                             $iconBg = 'bg-warning text-dark';
                                             break;
                                         case 'payment_received':
-                                            $iconClass = 'bi-wallet2';
-                                            $iconBg = 'bg-info';
+                                        case 'payment_success':
+                                        case 'payment_confirmed':
+                                            $iconClass = 'bi-check-circle';
+                                            $iconBg = 'bg-success';
                                             break;
                                         case 'payment_failed':
                                             $iconClass = 'bi-exclamation-triangle';
                                             $iconBg = 'bg-danger';
+                                            break;
+                                        case 'welcome':
+                                            $iconClass = 'bi-hand-thumbs-up';
+                                            $iconBg = 'bg-info';
+                                            break;
+                                        case 'password_reset':
+                                            $iconClass = 'bi-key';
+                                            $iconBg = 'bg-secondary';
+                                            break;
+                                        case 'payment_verified':
+                                            $iconClass = 'bi-check-circle-fill';
+                                            $iconBg = 'bg-success';
+                                            break;
+                                        case 'payment_refunded':
+                                            $iconClass = 'bi-arrow-counterclockwise';
+                                            $iconBg = 'bg-info';
+                                            break;
+                                        default:
+                                            $iconClass = 'bi-bell';
+                                            $iconBg = 'bg-primary';
                                             break;
                                     }
                                 @endphp

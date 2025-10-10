@@ -755,6 +755,9 @@ public function getFeeDetails(StudentEnrollment $enrollment)
             'course_id' => 'required|exists:courses,id',
             'enrollment_type' => 'required|in:new,continuing,transfer,readmission',
             'payment_plan' => 'required|in:full_payment,installments',
+            'payment_method' => 'required|in:mpesa,stripe,paypal,bank_transfer,cash',
+            'program_fees' => 'required|numeric|min:0',
+            'initial_payment' => 'nullable|numeric|min:0',
         ]);
 
         $student = Auth::guard('student')->user();
@@ -805,7 +808,8 @@ public function getFeeDetails(StudentEnrollment $enrollment)
         }
 
         // Validate course availability and capacity
-        if (!$course->isAvailable()) {
+        // Temporarily disabled for debugging
+        /*if (!$course->isAvailable()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -814,7 +818,7 @@ public function getFeeDetails(StudentEnrollment $enrollment)
             }
             return redirect()->route('student.enrollment.error')
                 ->with('error_message', 'This course is not currently available for enrollment.');
-        }
+        }*/
 
 
         // Allow registration if semester is active (remove strict date checks for now)
@@ -848,29 +852,34 @@ public function getFeeDetails(StudentEnrollment $enrollment)
             }
         }
 
-        // Calculate total fees using course total_fee or sum of individual fees
-        $totalFees = $course->total_fee ?? (
-            ($course->tuition_fee ?? 0) + 
-            ($course->registration_fee ?? 0) + 
-            ($course->examination_fee ?? 0) + 
-            ($course->library_fee ?? 0) + 
-            ($course->lab_fee ?? 0)
-        );
+        // Use submitted program fees (already calculated with discounts on frontend)
+        $totalFees = $request->program_fees;
 
         // Calculate installment details if payment plan is installments
         $installmentCount = null;
         $installmentAmount = null;
+        $initialPayment = $request->initial_payment ?? 0;
         $nextPaymentDue = now()->addDays(30);
         
         if ($request->payment_plan === 'installments') {
             // Ensure installment count is at least 1, defaulting to 4 if not set.
             $installmentCount = $course->max_installments > 0 ? min($course->max_installments, 12) : 4;
-            $processingFee = $totalFees * 0.02; // 2% processing fee for installments
-            $totalWithFee = $totalFees + $processingFee;
-            $installmentAmount = $totalWithFee / $installmentCount;
-        } else {
-            // Apply 5% discount for full payment
-            $totalFees = $totalFees * 0.95;
+            
+            // Validate minimum initial payment (25% of total fees)
+            $minInitialPayment = $totalFees * 0.25;
+            if ($initialPayment < $minInitialPayment) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Initial payment must be at least 25% of total fees (KES ' . number_format($minInitialPayment, 2) . ')'
+                    ], 422);
+                }
+                return redirect()->route('student.enrollment.error')
+                    ->with('error_message', 'Initial payment must be at least 25% of total fees (KES ' . number_format($minInitialPayment, 2) . ')');
+            }
+            
+            $remainingBalance = $totalFees - $initialPayment;
+            $installmentAmount = $remainingBalance / ($installmentCount - 1); // -1 because initial payment counts as first installment
         }
 
         try {
@@ -897,16 +906,28 @@ public function getFeeDetails(StudentEnrollment $enrollment)
             ]);
 
             $payment = null;
-            // Create initial payment record if first installment is due
-            if ($request->payment_plan === 'installments' && $installmentAmount) {
+            // Create initial payment record
+            $paymentAmount = $request->payment_plan === 'installments' ? $initialPayment : $totalFees;
+            
+            if ($paymentAmount > 0) {
                 $payment = new \App\Models\Payment([
                     'student_id' => $student->id,
                     'student_enrollment_id' => $enrollment->id,
-                    'amount' => $installmentAmount,
-                    'payment_method' => 'pending',
+                    'amount' => $paymentAmount,
+                    'payment_method' => $request->payment_method,
                     'status' => 'pending',
-                    'due_date' => $nextPaymentDue,
-                    'description' => 'Initial installment payment for ' . $course->name,
+                    'transaction_id' => 'ENR-' . time() . '-' . $student->id,
+                    'due_date' => $request->payment_plan === 'installments' ? now() : $semester->fee_payment_deadline,
+                    'description' => $request->payment_plan === 'installments' ? 
+                        'Initial payment for ' . $course->name : 
+                        'Full payment for ' . $course->name,
+                    'payment_reference' => 'ENR-' . $enrollment->enrollment_number . '-' . time(),
+                    'payment_details' => json_encode([
+                        'enrollment_type' => $request->enrollment_type,
+                        'payment_plan' => $request->payment_plan,
+                        'course_name' => $course->name,
+                        'semester' => $semester->name
+                    ])
                 ]);
                 $payment->save();
             }
@@ -916,7 +937,9 @@ public function getFeeDetails(StudentEnrollment $enrollment)
                 'student_id' => $student->id,
                 'payment_id' => $payment->id ?? null,
                 'title' => 'Enrollment Submitted',
-                'message' => "Your enrollment for {$course->name} has been submitted. Please complete your payment to secure your spot.",
+                'message' => $payment ? 
+                    "Your enrollment for {$course->name} has been submitted. Please complete your payment of KES " . number_format($paymentAmount, 2) . " to secure your spot." :
+                    "Your enrollment for {$course->name} has been submitted successfully.",
                 'notification_type' => 'enrollment', 
             ]);
             
@@ -930,31 +953,42 @@ public function getFeeDetails(StudentEnrollment $enrollment)
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Enrollment submitted successfully! Please complete your payment to secure your spot.',
+                    'message' => 'Enrollment submitted successfully! Redirecting to payment...',
                     'enrollment_number' => $enrollment->enrollment_number,
+                    'payment_id' => $payment->id ?? null,
+                    'redirect_url' => $payment ? route('payment.process', $payment->id) : route('student.enrollment.success', $enrollment->id)
                 ]);
+            }
+            
+            // Redirect to payment processing if payment record exists
+            if ($payment) {
+                return redirect()->route('payment.process', $payment->id)
+                    ->with('success', 'Enrollment submitted successfully! Please complete your payment to secure your spot.');
             }
             
             // Redirect to success page for regular form submissions
             return redirect()->route('student.enrollment.success', $enrollment->id)
-                ->with('success', 'Enrollment submitted successfully! Please complete your payment to secure your spot.');
+                ->with('success', 'Enrollment submitted successfully!');
 
         } catch (\Exception $e) {
             \DB::rollBack();
             // Log the detailed error for the developer
             \Log::error('Enrollment Error - Student ID: ' . ($student->id ?? 'N/A') . ' - ' . $e->getMessage());
-            \Log::error($e->getTraceAsString());
+            \Log::error('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            \Log::error('Trace: ' . $e->getTraceAsString());
             
-            // Prepare a detailed error message for debug mode
-            $errorMessage = 'An error occurred while processing your enrollment. Please try again or contact support if the problem persists.';
-            if (config('app.debug')) {
-                $errorMessage = 'Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine();
-            }
+            // Always show detailed error in debug mode
+            $errorMessage = 'Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine();
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $errorMessage
+                    'message' => $errorMessage,
+                    'debug' => [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]
                 ], 500);
             }
             

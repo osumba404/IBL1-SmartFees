@@ -199,10 +199,36 @@
                                 <option value="installments">Installments</option>
                             </select>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="">Select Payment Method</option>
+                                <option value="mpesa">M-Pesa</option>
+                                <option value="stripe">Credit/Debit Card</option>
+                                <option value="paypal">PayPal</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="cash">Cash Payment</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="program_fees" class="form-label">Program Fees (KES)</label>
+                            <input type="number" class="form-control" id="program_fees" name="program_fees" 
+                                   step="0.01" min="0" placeholder="Enter program fees" required readonly>
+                            <div class="form-text">This will be automatically filled based on the selected course</div>
+                        </div>
+
+                        <div class="mb-3" id="initial_payment_section" style="display: none;">
+                            <label for="initial_payment" class="form-label">Initial Payment Amount (KES)</label>
+                            <input type="number" class="form-control" id="initial_payment" name="initial_payment" 
+                                   step="0.01" min="0" placeholder="Enter initial payment amount">
+                            <div class="form-text">For installment plans, enter the amount you want to pay now</div>
+                        </div>
                         
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-primary">Submit Enrollment</button>
+                            <button type="button" class="btn btn-primary" onclick="submitEnrollment()">Submit & Pay Now</button>
                         </div>
                     </form>
             </div>
@@ -254,6 +280,13 @@ function showEnrollmentModal(courseId) {
         </div>
     `;
     
+    // Set program fees automatically
+    document.getElementById('program_fees').value = course.total_fee;
+    
+    // Reset payment plan to trigger fee calculation
+    document.getElementById('payment_plan').value = 'full_payment';
+    document.getElementById('payment_plan').dispatchEvent(new Event('change'));
+    
     document.getElementById('courseDetails').innerHTML = courseDetails;
     new bootstrap.Modal(document.getElementById('enrollmentModal')).show();
 }
@@ -297,31 +330,115 @@ function viewCourseDetails(courseId) {
     new bootstrap.Modal(document.getElementById('courseDetailsModal')).show();
 }
 
+// Handle payment plan changes
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentPlanSelect = document.getElementById('payment_plan');
+    const initialPaymentSection = document.getElementById('initial_payment_section');
+    const programFeesInput = document.getElementById('program_fees');
+    const initialPaymentInput = document.getElementById('initial_payment');
+    
+    if (paymentPlanSelect) {
+        paymentPlanSelect.addEventListener('change', function() {
+            const selectedPlan = this.value;
+            const courseFee = parseFloat(programFeesInput.value) || 0;
+            
+            if (selectedPlan === 'full_payment') {
+                // Apply 5% discount for full payment
+                const discountedFee = courseFee * 0.95;
+                programFeesInput.value = discountedFee.toFixed(2);
+                initialPaymentSection.style.display = 'none';
+                initialPaymentInput.required = false;
+            } else if (selectedPlan === 'installments') {
+                // Reset to original fee for installments
+                if (selectedCourse && document.getElementById('enrollmentCourseId').value) {
+                    const courseId = document.getElementById('enrollmentCourseId').value;
+                    const course = selectedCourse[courseId];
+                    programFeesInput.value = course.total_fee;
+                }
+                initialPaymentSection.style.display = 'block';
+                initialPaymentInput.required = true;
+                
+                // Set minimum initial payment (25% of total fee)
+                const minPayment = courseFee * 0.25;
+                initialPaymentInput.min = minPayment.toFixed(2);
+                initialPaymentInput.placeholder = `Minimum: KES ${minPayment.toFixed(2)}`;
+            }
+        });
+    }
+});
+
 function submitEnrollment() {
     const form = document.getElementById('enrollmentForm');
     const formData = new FormData(form);
     
+    // Validate required fields
+    const paymentMethod = formData.get('payment_method');
+    const programFees = formData.get('program_fees');
+    const paymentPlan = formData.get('payment_plan');
+    const initialPayment = formData.get('initial_payment');
+    
+    if (!paymentMethod) {
+        alert('Please select a payment method');
+        return;
+    }
+    
+    if (!programFees || programFees <= 0) {
+        alert('Invalid program fees');
+        return;
+    }
+    
+    if (paymentPlan === 'installments' && (!initialPayment || initialPayment <= 0)) {
+        alert('Please enter initial payment amount for installment plan');
+        return;
+    }
+    
+    // Debug: Log form data
+    console.log('Form data being sent:');
+    for (let [key, value] of formData.entries()) {
+        console.log(key + ': ' + value);
+    }
+    
     // Submit enrollment request via AJAX
-    fetch('/student/enrollments', {
+    fetch('{{ route('student.enrollments.store') }}', {
         method: 'POST',
         body: formData,
         headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json().then(data => {
+            if (!response.ok) {
+                console.log('Error response data:', data);
+                throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
+            }
+            return data;
+        });
+    })
     .then(data => {
+        console.log('Response data:', data);
         if (data.success) {
             bootstrap.Modal.getInstance(document.getElementById('enrollmentModal')).hide();
-            alert('Enrollment request submitted successfully! You will be notified once it is processed.');
-            location.reload();
+            
+            if (data.redirect_url) {
+                // Show success message and redirect to payment
+                alert('Enrollment submitted successfully! Redirecting to payment...');
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Enrollment request submitted successfully!');
+                location.reload();
+            }
         } else {
-            alert('Enrollment request failed: ' + data.message);
+            console.error('Enrollment failed:', data);
+            alert('Enrollment request failed: ' + (data.message || 'Unknown error'));
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while submitting enrollment request');
+        console.error('Fetch error:', error);
+        alert('An error occurred while submitting enrollment request: ' + error.message);
     });
 }
 </script>

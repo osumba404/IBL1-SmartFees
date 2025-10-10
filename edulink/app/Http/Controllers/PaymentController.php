@@ -64,6 +64,7 @@ class PaymentController extends Controller
             if ($existingPayment && $existingPayment->status === 'pending') {
                 $payment = $existingPayment;
                 $payment->mpesa_phone_number = $this->formatPhone($request->phone);
+                $payment->payment_method = 'mpesa';
                 $payment->save();
             } else {
                 // Create payment record with enrollment
@@ -317,6 +318,15 @@ class PaymentController extends Controller
                         // Send payment confirmation notification
                         $notificationService = new NotificationService();
                         $notificationService->sendPaymentConfirmation($payment);
+                        
+                        // Create in-app notification
+                        PaymentNotification::create([
+                            'student_id' => $student->id,
+                            'payment_id' => $payment->id,
+                            'title' => 'Payment Successful',
+                            'message' => "Your M-Pesa payment of KES " . number_format($payment->amount, 2) . " has been processed successfully. Receipt: {$mpesaReceiptNumber}",
+                            'notification_type' => 'payment_success',
+                        ]);
                     }
                 }
                 
@@ -391,6 +401,8 @@ class PaymentController extends Controller
             // Use existing payment or create new one
             if ($existingPayment && $existingPayment->status === 'pending') {
                 $payment = $existingPayment;
+                $payment->payment_method = 'paypal';
+                $payment->save();
             } else {
                 // Create payment record with enrollment
                 $student = auth('student')->user();
@@ -505,6 +517,15 @@ class PaymentController extends Controller
                         // Send payment confirmation notification
                         $notificationService = new NotificationService();
                         $notificationService->sendPaymentConfirmation($payment);
+                        
+                        // Create in-app notification
+                        PaymentNotification::create([
+                            'student_id' => $student->id,
+                            'payment_id' => $payment->id,
+                            'title' => 'Payment Successful',
+                            'message' => "Your PayPal payment of KES " . number_format($payment->amount, 2) . " has been processed successfully.",
+                            'notification_type' => 'payment_success',
+                        ]);
                     }
                 }
                 
@@ -548,6 +569,8 @@ class PaymentController extends Controller
             // Use existing payment or create new one
             if ($existingPayment && $existingPayment->status === 'pending') {
                 $payment = $existingPayment;
+                $payment->payment_method = 'stripe';
+                $payment->save();
             } else {
                 // Create payment record with enrollment
                 $student = auth('student')->user();
@@ -647,6 +670,15 @@ class PaymentController extends Controller
                                 // Send payment confirmation notification
                                 $notificationService = new NotificationService();
                                 $notificationService->sendPaymentConfirmation($payment);
+                                
+                                // Create in-app notification
+                                PaymentNotification::create([
+                                    'student_id' => $student->id,
+                                    'payment_id' => $payment->id,
+                                    'title' => 'Payment Successful',
+                                    'message' => "Your card payment of KES " . number_format($payment->amount, 2) . " has been processed successfully.",
+                                    'notification_type' => 'payment_success',
+                                ]);
                             }
                         }
                     }
@@ -658,6 +690,41 @@ class PaymentController extends Controller
             Log::error('Stripe webhook error: ' . $e->getMessage());
             return response()->json(['error' => 'Webhook failed'], 400);
         }
+    }
+    
+    public function processPayment(Payment $payment)
+    {
+        $student = auth('student')->user();
+        
+        // Ensure payment belongs to authenticated student
+        if ($payment->student_id !== $student->id) {
+            abort(403, 'Unauthorized access to payment');
+        }
+        
+        // Load enrollment and course data
+        $payment->load(['enrollment.course', 'student']);
+        
+        // Set session data for payment form
+        session([
+            'payment_data' => [
+                'payment_id' => $payment->id,
+                'amount' => $payment->amount,
+                'payment_method' => $payment->payment_method,
+                'description' => $payment->description ?? 'Course enrollment payment'
+            ]
+        ]);
+        
+        return view('payment.create', [
+            'student' => $student,
+            'enrollment' => $payment->enrollment,
+            'existingPayment' => $payment,
+            'paymentData' => [
+                'payment_id' => $payment->id,
+                'amount' => $payment->amount,
+                'payment_method' => $payment->payment_method,
+                'description' => $payment->description ?? 'Course enrollment payment'
+            ]
+        ]);
     }
     
     public function success()

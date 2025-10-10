@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Models\PaymentNotification;
 use App\Models\Student;
 use App\Models\Course;
 use App\Models\Semester;
@@ -143,6 +144,15 @@ class PaymentController extends Controller
             ]);
 
             if ($result['success']) {
+                // Create notification for student
+                PaymentNotification::create([
+                    'student_id' => $payment->student_id,
+                    'payment_id' => $payment->id,
+                    'title' => 'Payment Verified',
+                    'message' => "Your payment of KES " . number_format($payment->amount, 2) . " has been verified by administration.",
+                    'notification_type' => 'payment_verified',
+                ]);
+                
                 DB::commit();
                 if ($request->expectsJson()) {
                     return response()->json(['success' => true, 'message' => $result['message']]);
@@ -191,6 +201,15 @@ class PaymentController extends Controller
             ]);
 
             if ($result['success']) {
+                // Create notification for student
+                PaymentNotification::create([
+                    'student_id' => $payment->student_id,
+                    'payment_id' => $payment->id,
+                    'title' => 'Payment Refunded',
+                    'message' => "A refund of KES " . number_format($request->refund_amount, 2) . " has been processed for your payment. Reason: {$request->refund_reason}",
+                    'notification_type' => 'payment_refunded',
+                ]);
+                
                 DB::commit();
                 if ($request->expectsJson()) {
                     return response()->json(['success' => true, 'message' => $result['message']]);
