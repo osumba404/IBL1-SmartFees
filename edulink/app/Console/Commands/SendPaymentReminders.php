@@ -3,68 +3,33 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Student;
-use App\Models\StudentEnrollment;
-use App\Models\PaymentNotification;
+use App\Models\PaymentInstallment;
 use App\Services\NotificationService;
 
 class SendPaymentReminders extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'payments:send-reminders';
+    protected $description = 'Send payment reminders for upcoming installments';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Send payment reminders to students with outstanding balances';
-
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
         $this->info('Sending payment reminders...');
-        
+
         $notificationService = new NotificationService();
-        $remindersSent = 0;
         
-        // Get students with outstanding balances
-        $enrollments = StudentEnrollment::with(['student', 'course'])
-            ->whereRaw('total_fees_due > fees_paid')
-            ->where('status', 'active')
+        // Get installments due in 3 days
+        $upcomingInstallments = PaymentInstallment::where('status', 'pending')
+            ->whereBetween('due_date', [now()->addDays(2), now()->addDays(4)])
+            ->with(['paymentPlan.enrollment.student'])
             ->get();
-        
-        foreach ($enrollments as $enrollment) {
-            $outstandingAmount = $enrollment->total_fees_due - $enrollment->fees_paid;
-            
-            if ($outstandingAmount > 0) {
-                // Send email reminder
-                $notificationService->sendPaymentReminder(
-                    $enrollment->student,
-                    $outstandingAmount
-                );
-                
-                // Create in-app notification
-                PaymentNotification::create([
-                    'student_id' => $enrollment->student->id,
-                    'title' => 'Payment Reminder',
-                    'message' => "You have an outstanding balance of KES " . number_format($outstandingAmount, 2) . " for {$enrollment->course->name}. Please make your payment to avoid late fees.",
-                    'notification_type' => 'payment_reminder',
-                ]);
-                
-                $remindersSent++;
-                $this->info("Reminder sent to {$enrollment->student->email}");
-            }
+
+        $reminderCount = 0;
+        foreach ($upcomingInstallments as $installment) {
+            $student = $installment->paymentPlan->enrollment->student;
+            $notificationService->sendPaymentReminder($student, $installment);
+            $reminderCount++;
         }
-        
-        $this->info("Payment reminders sent to {$remindersSent} students.");
-        
-        return 0;
+
+        $this->info("Sent {$reminderCount} payment reminders");
     }
 }

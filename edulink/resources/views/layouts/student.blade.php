@@ -1232,6 +1232,572 @@
         [data-theme="dark"] .table-striped tbody tr:nth-of-type(even) th {
             background-color: var(--card-bg) !important;
         }
+
+        /* Modern Mobile-First Responsive Design */
+        
+        /* Base mobile styles (320px+) */
+        .container-fluid {
+            padding: 0.75rem;
+        }
+        
+        .content-wrapper {
+            padding: 1rem 0.75rem;
+        }
+        
+        .page-title {
+            font-size: clamp(1.25rem, 4vw, 1.75rem);
+            line-height: 1.2;
+        }
+        
+        .card {
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 1rem;
+            font-size: 0.95rem;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+        
+        /* Modern table responsive design */
+        .table-responsive {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin: 0 -0.75rem;
+        }
+        
+        .table {
+            font-size: 0.875rem;
+            margin-bottom: 0;
+        }
+        
+        .table th {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.75rem 0.5rem;
+            white-space: nowrap;
+        }
+        
+        .table td {
+            padding: 0.75rem 0.5rem;
+            vertical-align: middle;
+        }
+        
+        /* Mobile navigation */
+        .top-header {
+            padding: 0 1rem;
+            height: 56px;
+        }
+        
+        .sidebar {
+            width: 100%;
+            max-width: 320px;
+            transform: translateX(-100%);
+            backdrop-filter: blur(10px);
+            box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+        }
+        
+        .sidebar.show {
+            transform: translateX(0);
+        }
+        
+        .main-content {
+            margin-left: 0;
+        }
+        
+        /* Modern buttons */
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            padding: 0.625rem 1.25rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        /* Form controls */
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            border: 1.5px solid var(--border-color);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        /* Alerts */
+        .alert {
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 0.875rem;
+            border: none;
+        }
+        
+        /* Badges */
+        .badge {
+            border-radius: 6px;
+            font-size: 0.75rem;
+            padding: 0.375rem 0.75rem;
+        }
+        
+        /* Dropdowns */
+        .dropdown-menu {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            padding: 0.5rem;
+        }
+        
+        .dropdown-item {
+            border-radius: 8px;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            margin-bottom: 2px;
+        }
+        
+        /* Small mobile (up to 480px) */
+        @media (max-width: 480px) {
+            .container-fluid {
+                padding: 0.5rem;
+            }
+            
+            .content-wrapper {
+                padding: 0.75rem 0.5rem;
+            }
+            
+            .card-header, .card-body {
+                padding: 0.75rem;
+            }
+            
+            .table-responsive {
+                margin: 0 -0.5rem;
+                border-radius: 8px;
+            }
+            
+            .table th, .table td {
+                padding: 0.5rem 0.375rem;
+                font-size: 0.8rem;
+            }
+            
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .form-control, .form-select {
+                padding: 0.625rem;
+                font-size: 0.8rem;
+            }
+            
+            .notification-dropdown {
+                width: calc(100vw - 1rem);
+                max-width: 300px;
+            }
+            
+            .user-dropdown {
+                width: calc(100vw - 1rem);
+                max-width: 280px;
+            }
+        }
+        
+        /* Medium mobile (481px - 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .container-fluid {
+                padding: 1rem;
+            }
+            
+            .content-wrapper {
+                padding: 1.25rem 1rem;
+            }
+            
+            .table-responsive {
+                margin: 0 -1rem;
+            }
+        }
+        
+        /* Tablet (769px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar {
+                width: 280px;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-wrapper {
+                padding: 1.5rem;
+            }
+        }
+        
+        /* Desktop (1025px+) */
+        @media (min-width: 1025px) {
+            .sidebar {
+                transform: translateX(0);
+                position: fixed;
+            }
+            
+            .main-content {
+                margin-left: 280px;
+            }
+            
+            .content-wrapper {
+                padding: 2rem;
+            }
+            
+            .container-fluid {
+                padding: 0 1.5rem;
+            }
+        }
+        
+        /* Advanced table features */
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+            }
+            
+            .table-responsive::-webkit-scrollbar {
+                height: 4px;
+            }
+            
+            .table-responsive::-webkit-scrollbar-track {
+                background: var(--bg-secondary);
+            }
+            
+            .table-responsive::-webkit-scrollbar-thumb {
+                background: var(--border-color);
+                border-radius: 2px;
+            }
+            
+            .table {
+                min-width: 600px;
+            }
+            
+            .table th:first-child,
+            .table td:first-child {
+                position: sticky;
+                left: 0;
+                background: var(--card-bg);
+                z-index: 10;
+                box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+            }
+        }
+        
+        /* Modern animations */
+        .card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .sidebar {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Touch improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            .nav-link {
+                padding: 1rem 1.5rem;
+            }
+            
+            .dropdown-item {
+                padding: 0.875rem 1rem;
+            }
+            
+            .table th, .table td {
+                padding: 1rem 0.75rem;
+            }
+        }
+        
+        /* Dark mode enhancements */
+        [data-theme="dark"] .table-responsive {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        [data-theme="dark"] .card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        
+        [data-theme="dark"] .dropdown-menu {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        
+        /* Footer responsive */
+        @media (max-width: 768px) {
+            .footer {
+                padding: 1.5rem 0;
+                text-align: center;
+            }
+            
+            .footer .text-md-end {
+                text-align: center !important;
+                margin-top: 1rem;
+            }
+            
+            .footer h5 {
+                font-size: 1.1rem;
+            }
+            
+            .footer p, .footer small {
+                font-size: 0.875rem;
+            }
+        }
+        
+        /* Pagination fixes */
+        .pagination {
+            margin: 0;
+        }
+        
+        .pagination .page-link {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.25;
+            border-radius: 6px;
+            margin: 0 2px;
+            min-width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .pagination .page-link:hover {
+            background-color: var(--bg-secondary);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+        
+        .pagination .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .pagination .page-item.disabled .page-link {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+        
+        /* Fix arrow icons in pagination */
+        .pagination .page-link i {
+            font-size: 0.75rem;
+            line-height: 1;
+        }
+        
+        .pagination .page-link svg {
+            width: 12px;
+            height: 12px;
+        }
+        
+        /* Ensure consistent pagination styling */
+        .pagination .page-item:first-child .page-link,
+        .pagination .page-item:last-child .page-link {
+            border-radius: 6px;
+        }
+        
+        /* Dark mode pagination */
+        [data-theme="dark"] .pagination .page-link {
+            background-color: var(--card-bg) !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+        
+        [data-theme="dark"] .pagination .page-link:hover {
+            background-color: var(--bg-secondary) !important;
+            border-color: var(--primary-color) !important;
+            color: var(--primary-color) !important;
+        }
+        
+        [data-theme="dark"] .pagination .page-item.active .page-link {
+            background-color: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+            color: white !important;
+        }
+        
+        [data-theme="dark"] .pagination .page-item.disabled .page-link {
+            background-color: var(--bg-secondary) !important;
+            color: var(--text-secondary) !important;
+        }
+        
+        /* Force pagination arrow sizing with maximum specificity */
+        .pagination .page-item .page-link,
+        .pagination .page-item .page-link *,
+        .pagination .page-item .page-link i,
+        .pagination .page-item .page-link svg {
+            font-size: 0.75rem !important;
+            line-height: 1 !important;
+            width: auto !important;
+            height: auto !important;
+        }
+        
+        .pagination .page-item .page-link svg {
+            width: 12px !important;
+            height: 12px !important;
+            max-width: 12px !important;
+            max-height: 12px !important;
+        }
+        
+        .pagination .page-item .page-link i {
+            font-size: 0.75rem !important;
+            line-height: 1 !important;
+            display: inline-block !important;
+        }
+        
+        /* Override any Bootstrap or custom arrow styles */
+        .pagination .page-item:first-child .page-link,
+        .pagination .page-item:last-child .page-link {
+            font-size: 0.875rem !important;
+        }
+        
+        .pagination .page-item:first-child .page-link *,
+        .pagination .page-item:last-child .page-link * {
+            font-size: 0.75rem !important;
+        }
+        
+        /* Target Laravel pagination specifically */
+        .pagination .page-item .page-link[rel="prev"],
+        .pagination .page-item .page-link[rel="next"] {
+            font-size: 0.875rem !important;
+        }
+        
+        .pagination .page-item .page-link[rel="prev"] *,
+        .pagination .page-item .page-link[rel="next"] * {
+            font-size: 0.75rem !important;
+            width: 12px !important;
+            height: 12px !important;
+        }
+        
+        /* Target specific arrow characters and symbols */
+        .pagination .page-link:contains("‹"),
+        .pagination .page-link:contains("›"),
+        .pagination .page-link:contains("«"),
+        .pagination .page-link:contains("»") {
+            font-size: 0.875rem !important;
+        }
+        
+        /* Override any inline styles on pagination */
+        .pagination .page-link[style] {
+            font-size: 0.875rem !important;
+        }
+        
+        .pagination .page-link[style] * {
+            font-size: 0.75rem !important;
+        }
+        
+        /* Mobile pagination adjustments */
+        @media (max-width: 576px) {
+            .pagination .page-link {
+                padding: 0.375rem 0.5rem;
+                font-size: 0.8rem;
+                min-width: 32px;
+                height: 32px;
+                margin: 0 1px;
+            }
+            
+            .pagination .page-link i {
+                font-size: 0.7rem !important;
+            }
+            
+            .pagination .page-link svg {
+                width: 10px !important;
+                height: 10px !important;
+            }
+            
+            .pagination .page-link[rel="prev"],
+            .pagination .page-link[rel="next"] {
+                font-size: 0.8rem !important;
+            }
+            
+            .pagination .page-link[rel="prev"] *,
+            .pagination .page-link[rel="next"] * {
+                font-size: 0.7rem !important;
+            }
+        }
+        
+        /* Additional pagination fixes for Laravel */
+        .pagination .page-item .page-link span {
+            font-size: 0.75rem !important;
+            line-height: 1 !important;
+        }
+        
+        .pagination .page-item .page-link .sr-only {
+            font-size: 0.75rem !important;
+        }
+        
+        /* Target Bootstrap Icons in pagination */
+        .pagination .page-link .bi {
+            font-size: 0.75rem !important;
+        }
+        
+        /* Override any framework-specific pagination styles */
+        .pagination-wrapper .pagination .page-link,
+        .d-flex .pagination .page-link {
+            font-size: 0.875rem !important;
+        }
+        
+        .pagination-wrapper .pagination .page-link *,
+        .d-flex .pagination .page-link * {
+            font-size: 0.75rem !important;
+        }
+        
+        /* Print styles */
+        @media print {
+            .sidebar, .top-header, .footer {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-wrapper {
+                padding: 0;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+            
+            .pagination {
+                display: none;
+            }
+        }
     </style>
 
     @stack('styles')
@@ -1293,6 +1859,13 @@
                        href="{{ route('student.fees.index') }}">
                         <i class="bi bi-receipt"></i>
                         Fee Structure
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('student.payment-plans.*') ? 'active' : '' }}" 
+                       href="{{ route('student.payment-plans.index') }}">
+                        <i class="bi bi-calendar-check"></i>
+                        Payment Plans
                     </a>
                 </li>
                 <li class="nav-item">
@@ -1366,6 +1939,20 @@
                         <div class="header-brand-subtitle">Student Portal</div>
                     </div>
                 </a>
+            </div>
+            
+            <!-- Global Search -->
+            <div class="flex-grow-1 mx-4 d-none d-md-block">
+                <div class="position-relative">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="global-search" 
+                               placeholder="Search payments, courses, transactions..." 
+                               style="background: white; border-color: #dee2e6;">
+                    </div>
+                </div>
             </div>
             
             <div class="header-right">
@@ -1554,6 +2141,9 @@
             @yield('content')
             </div>
         </main>
+        
+        <!-- Include AI Assistant for students -->
+        @include('student.ai-assistant')
     </div>
 
     <!-- Footer -->
@@ -1679,6 +2269,34 @@
                     }
                 });
             });
+
+            // Fix pagination arrows dynamically
+            fixPaginationArrows();
+            
+            // Re-fix pagination arrows when content changes
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        // Small delay to ensure DOM is fully updated
+                        setTimeout(fixPaginationArrows, 100);
+                    }
+                });
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
+            // Additional fix on window load
+            window.addEventListener('load', function() {
+                setTimeout(fixPaginationArrows, 200);
+            });
+            
+            // Fix pagination on AJAX requests (if any)
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(fixPaginationArrows, 300);
+            });
         });
 
         // Theme toggle function
@@ -1754,13 +2372,229 @@
             }
         });
 
+        // Fix pagination arrows function with enhanced targeting
+        function fixPaginationArrows() {
+            const paginationLinks = document.querySelectorAll('.pagination .page-link');
+            paginationLinks.forEach(function(link) {
+                // Fix all icons and SVGs in pagination links
+                const icons = link.querySelectorAll('i, svg');
+                icons.forEach(function(icon) {
+                    if (icon.tagName === 'SVG') {
+                        icon.style.width = '12px';
+                        icon.style.height = '12px';
+                        icon.style.maxWidth = '12px';
+                        icon.style.maxHeight = '12px';
+                        icon.style.fontSize = '12px';
+                    } else {
+                        icon.style.fontSize = '0.75rem';
+                        icon.style.lineHeight = '1';
+                    }
+                });
+                
+                // Fix text content for arrow characters
+                const text = link.textContent.trim();
+                if (text === '‹' || text === '›' || text === '«' || text === '»' || 
+                    text === 'Previous' || text === 'Next') {
+                    link.style.fontSize = '0.875rem';
+                }
+                
+                // Ensure proper link styling
+                link.style.display = 'flex';
+                link.style.alignItems = 'center';
+                link.style.justifyContent = 'center';
+                link.style.minWidth = '36px';
+                link.style.height = '36px';
+                link.style.padding = '0.5rem 0.75rem';
+                
+                // Force override any existing styles
+                link.setAttribute('style', link.getAttribute('style') + '; font-size: 0.875rem !important;');
+            });
+            
+            // Additional fix for Laravel pagination arrows
+            const prevNext = document.querySelectorAll('.pagination .page-link[rel="prev"], .pagination .page-link[rel="next"]');
+            prevNext.forEach(function(link) {
+                link.style.fontSize = '0.875rem';
+                const allElements = link.querySelectorAll('*');
+                allElements.forEach(function(el) {
+                    el.style.fontSize = '0.75rem';
+                    if (el.tagName === 'SVG') {
+                        el.style.width = '12px';
+                        el.style.height = '12px';
+                    }
+                });
+            });
+        }
+
+        // Global search functionality
+        function initGlobalSearch() {
+            const searchInput = document.getElementById('global-search');
+            if (!searchInput) return;
+            
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    hideSearchResults();
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    performGlobalSearch(query);
+                }, 300);
+            });
+        }
+
+        function performGlobalSearch(query) {
+            fetch(`/search/global?q=${encodeURIComponent(query)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displaySearchResults(data.results);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+            });
+        }
+
+        function displaySearchResults(results) {
+            let dropdown = document.getElementById('search-dropdown');
+            if (!dropdown) {
+                dropdown = document.createElement('div');
+                dropdown.id = 'search-dropdown';
+                dropdown.className = 'position-absolute bg-white border rounded shadow-lg';
+                dropdown.style.cssText = 'top: 100%; left: 0; right: 0; z-index: 1000; max-height: 300px; overflow-y: auto;';
+                document.getElementById('global-search').parentElement.appendChild(dropdown);
+            }
+            
+            if (results.length === 0) {
+                dropdown.innerHTML = '<div class="p-3 text-muted">No results found</div>';
+            } else {
+                dropdown.innerHTML = results.map(result => `
+                    <a href="${result.url}" class="d-block p-3 text-decoration-none border-bottom">
+                        <div class="d-flex align-items-center">
+                            <i class="${result.icon} me-2"></i>
+                            <div>
+                                <div class="fw-bold">${result.title}</div>
+                                <small class="text-muted">${result.subtitle}</small>
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+            }
+            
+            dropdown.style.display = 'block';
+        }
+
+        function hideSearchResults() {
+            const dropdown = document.getElementById('search-dropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        }
+        
+        // Initialize global search
+        initGlobalSearch();
+        
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#global-search') && !e.target.closest('#search-dropdown')) {
+                hideSearchResults();
+            }
+        });
+
         // Global AJAX setup for CSRF token
         if (typeof axios !== 'undefined') {
             axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
             axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         }
+        
+        // Force pagination fix on page interactions
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.pagination')) {
+                setTimeout(fixPaginationArrows, 50);
+            }
+        });
+        
+        // Additional pagination observer for dynamic content
+        if (typeof MutationObserver !== 'undefined') {
+            const paginationObserver = new MutationObserver(function(mutations) {
+                let shouldFix = false;
+                mutations.forEach(function(mutation) {
+                    if (mutation.target.classList && 
+                        (mutation.target.classList.contains('pagination') || 
+                         mutation.target.querySelector('.pagination'))) {
+                        shouldFix = true;
+                    }
+                });
+                if (shouldFix) {
+                    setTimeout(fixPaginationArrows, 10);
+                }
+            });
+            
+            const paginationContainer = document.querySelector('.pagination');
+            if (paginationContainer) {
+                paginationObserver.observe(paginationContainer.parentElement, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true
+                });
+            }
+        }
     </script>
 
     @stack('scripts')
+    
+    <!-- Final pagination fix script -->
+    <script>
+        // Final pagination arrow fix that runs after all other scripts
+        (function() {
+            function finalPaginationFix() {
+                const paginationLinks = document.querySelectorAll('.pagination .page-link');
+                paginationLinks.forEach(function(link) {
+                    // Force small font size for all pagination content
+                    link.style.setProperty('font-size', '0.875rem', 'important');
+                    
+                    // Fix all child elements
+                    const allChildren = link.querySelectorAll('*');
+                    allChildren.forEach(function(child) {
+                        child.style.setProperty('font-size', '0.75rem', 'important');
+                        if (child.tagName === 'SVG') {
+                            child.style.setProperty('width', '12px', 'important');
+                            child.style.setProperty('height', '12px', 'important');
+                        }
+                    });
+                    
+                    // Ensure proper dimensions
+                    link.style.setProperty('min-width', '36px', 'important');
+                    link.style.setProperty('height', '36px', 'important');
+                    link.style.setProperty('display', 'flex', 'important');
+                    link.style.setProperty('align-items', 'center', 'important');
+                    link.style.setProperty('justify-content', 'center', 'important');
+                });
+            }
+            
+            // Run immediately
+            finalPaginationFix();
+            
+            // Run after a delay
+            setTimeout(finalPaginationFix, 100);
+            setTimeout(finalPaginationFix, 500);
+            
+            // Run on window load
+            window.addEventListener('load', finalPaginationFix);
+            
+            // Run on any DOM changes
+            if (typeof MutationObserver !== 'undefined') {
+                const observer = new MutationObserver(finalPaginationFix);
+                observer.observe(document.body, { childList: true, subtree: true });
+            }
+        })();
+    </script>
 </body>
 </html>

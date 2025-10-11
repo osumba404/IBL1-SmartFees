@@ -354,14 +354,52 @@ class StudentController extends Controller
     /**
      * Display student payment history
      */
-    public function paymentHistory(): View
+    public function paymentHistory(Request $request)
     {
         $student = Auth::guard('student')->user();
         
-        $payments = $student->payments()
-            ->with(['enrollment.course', 'enrollment.semester'])
-            ->latest()
-            ->paginate(20);
+        $query = $student->payments()->with(['enrollment.course', 'enrollment.semester']);
+        
+        // Apply search if provided
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('transaction_id', 'LIKE', "%{$search}%")
+                  ->orWhere('payment_reference', 'LIKE', "%{$search}%")
+                  ->orWhere('amount', 'LIKE', "%{$search}%")
+                  ->orWhereHas('enrollment.course', function($courseQuery) use ($search) {
+                      $courseQuery->where('name', 'LIKE', "%{$search}%")
+                                  ->orWhere('course_code', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+        
+        // Apply filters if provided
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->filled('method')) {
+            $query->where('payment_method', $request->method);
+        }
+        
+        if ($request->filled('amount_min')) {
+            $query->where('amount', '>=', $request->amount_min);
+        }
+        
+        if ($request->filled('amount_max')) {
+            $query->where('amount', '<=', $request->amount_max);
+        }
+        
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        $payments = $query->latest()->paginate(20)->withQueryString();
 
         // Payment statistics
         $paymentStats = [
@@ -370,6 +408,13 @@ class StudentController extends Controller
             'failed_payments' => $student->payments()->where('status', 'failed')->count(),
             'last_payment' => $student->payments()->where('status', 'completed')->latest()->first(),
         ];
+
+        // Return JSON for AJAX requests
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'html' => view('student.payment-history', compact('payments', 'paymentStats', 'student'))->render()
+            ]);
+        }
 
         return view('student.payment-history', compact('payments', 'paymentStats', 'student'));
     }

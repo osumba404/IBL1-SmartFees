@@ -110,3 +110,75 @@
     });
 </script>
 @endpush
+
+@push('styles')
+<style>
+    /* Dark mode fixes for DataTables */
+    [data-theme="dark"] .dataTables_wrapper {
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .dataTables_wrapper .dataTables_filter input {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .dataTables_wrapper .dataTables_length select {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .dataTables_wrapper .dataTables_info {
+        color: var(--text-secondary) !important;
+    }
+    
+    [data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button {
+        color: var(--text-primary) !important;
+        background: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        color: var(--text-primary) !important;
+        background: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        color: white !important;
+        background: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .table-bordered {
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-bordered th,
+    [data-theme="dark"] .table-bordered td {
+        border-color: var(--border-color) !important;
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .table thead th {
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .bg-success {
+        background-color: var(--success-color) !important;
+    }
+    
+    [data-theme="dark"] .bg-info {
+        background-color: #06b6d4 !important;
+    }
+    
+    [data-theme="dark"] .bg-secondary {
+        background-color: var(--text-secondary) !important;
+    }
+</style>
+@endpush

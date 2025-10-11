@@ -133,25 +133,49 @@ class NotificationService
     }
 
     /**
-     * Send payment reminder
+     * Send payment reminder for installments
      */
-    public function sendPaymentReminder(Student $student, $amount): void
+    public function sendPaymentReminder(Student $student, $installment): void
     {
-        // Email reminder
+        $subject = 'Payment Reminder - Installment Due';
+        $message = "Dear {$student->first_name},\n\nThis is a reminder that your installment payment of KES " . number_format($installment->total_amount, 2) . " is due on {$installment->due_date->format('M d, Y')}.\n\nPlease make your payment to avoid late fees.\n\nThank you.";
+        
         if (config('services.notifications.email_enabled', true)) {
             Mail::send('emails.payment-reminder', [
                 'student' => $student,
-                'amount' => $amount
-            ], function ($message) use ($student) {
+                'installment' => $installment
+            ], function ($message) use ($student, $subject) {
                 $message->to($student->email)
-                        ->subject('Payment Reminder - Edulink SmartFees');
+                        ->subject($subject);
             });
         }
-
-        // SMS reminder
-        if (config('services.notifications.sms_enabled', false)) {
-            $message = "Dear {$student->first_name}, you have an outstanding balance of KES " . number_format($amount, 2) . ". Please make payment to avoid late fees. - Edulink";
-            $this->sendSMS($student->phone, $message);
+        
+        if ($student->phone && config('services.notifications.sms_enabled', false)) {
+            $smsMessage = "Payment reminder: KES " . number_format($installment->total_amount, 2) . " due {$installment->due_date->format('M d')}. Pay now to avoid late fees.";
+            $this->sendSMS($student->phone, $smsMessage);
+        }
+    }
+    
+    /**
+     * Send late fee notification
+     */
+    public function sendLateFeeNotification(Student $student, $installment): void
+    {
+        $subject = 'Late Fee Applied - Overdue Payment';
+        
+        if (config('services.notifications.email_enabled', true)) {
+            Mail::send('emails.late-fee-notification', [
+                'student' => $student,
+                'installment' => $installment
+            ], function ($message) use ($student, $subject) {
+                $message->to($student->email)
+                        ->subject($subject);
+            });
+        }
+        
+        if ($student->phone && config('services.notifications.sms_enabled', false)) {
+            $smsMessage = "OVERDUE: KES " . number_format($installment->total_amount, 2) . " (incl. late fee). Pay now to avoid further charges.";
+            $this->sendSMS($student->phone, $smsMessage);
         }
     }
 

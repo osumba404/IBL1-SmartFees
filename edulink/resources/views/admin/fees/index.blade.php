@@ -119,7 +119,7 @@
                                                 <span class="badge bg-success">Active</span>
                                                 @break
                                             @case('inactive')
-                                                <span class="badge bg-warning">Inactive</span>
+                                                <span class="badge bg-warning text-dark">Inactive</span>
                                                 @break
                                             @case('archived')
                                                 <span class="badge bg-secondary">Archived</span>
@@ -290,22 +290,189 @@
 </div>
 @endsection
 
+@push('styles')
+<style>
+/* Dark Mode Fixes for Fee Structures Table */
+[data-theme="dark"] .table {
+    --bs-table-bg: var(--bs-dark) !important;
+    --bs-table-color: var(--bs-light) !important;
+    color: var(--bs-light) !important;
+    background-color: var(--bs-dark) !important;
+}
+
+[data-theme="dark"] .table th,
+[data-theme="dark"] .table td {
+    color: var(--bs-light) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .table-light {
+    --bs-table-bg: rgba(255, 255, 255, 0.05) !important;
+    --bs-table-color: var(--bs-light) !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: var(--bs-light) !important;
+}
+
+[data-theme="dark"] .table-light th {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: var(--bs-light) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover {
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.075) !important;
+    background-color: rgba(255, 255, 255, 0.075) !important;
+    color: var(--bs-light) !important;
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover td {
+    color: var(--bs-light) !important;
+}
+
+[data-theme="dark"] .fw-medium,
+[data-theme="dark"] .fw-bold {
+    color: var(--bs-light) !important;
+}
+
+[data-theme="dark"] .text-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+[data-theme="dark"] .text-primary {
+    color: var(--bs-primary) !important;
+}
+
+/* Badge colors in dark mode */
+[data-theme="dark"] .badge.bg-success {
+    background-color: var(--bs-success) !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .badge.bg-warning {
+    background-color: var(--bs-warning) !important;
+    color: black !important;
+}
+
+[data-theme="dark"] .badge.bg-secondary {
+    background-color: var(--bs-secondary) !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .badge.bg-light {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--bs-light) !important;
+}
+
+/* Dropdown menu in dark mode */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--bs-dark) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--bs-light) !important;
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--bs-light) !important;
+}
+
+[data-theme="dark"] .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Statistics cards in dark mode */
+[data-theme="dark"] .card.bg-primary,
+[data-theme="dark"] .card.bg-success,
+[data-theme="dark"] .card.bg-info,
+[data-theme="dark"] .card.bg-warning {
+    color: white !important;
+}
+
+[data-theme="dark"] .card.bg-primary .card-title,
+[data-theme="dark"] .card.bg-success .card-title,
+[data-theme="dark"] .card.bg-info .card-title,
+[data-theme="dark"] .card.bg-warning .card-title {
+    color: white !important;
+}
+
+/* Pagination in dark mode */
+[data-theme="dark"] .pagination .page-link {
+    background-color: var(--bs-dark) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--bs-light) !important;
+}
+
+[data-theme="dark"] .pagination .page-link:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: var(--bs-light) !important;
+}
+
+[data-theme="dark"] .pagination .page-item.active .page-link {
+    background-color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .pagination .page-item.disabled .page-link {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Card footer in dark mode */
+[data-theme="dark"] .card-footer {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Empty state in dark mode */
+[data-theme="dark"] .display-1 {
+    color: rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="dark"] .text-center h5,
+[data-theme="dark"] .text-center p {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+</style>
+@endpush
+
 @push('scripts')
 <script>
-// Auto-submit form when filters change
-document.querySelectorAll('select[name="course_id"], select[name="semester_id"], select[name="status"]').forEach(select => {
-    select.addEventListener('change', function() {
-        this.form.submit();
-    });
+// Auto-submit form when filters change (optional - remove if you want manual filtering)
+// document.querySelectorAll('select[name="course_id"], select[name="semester_id"], select[name="status"]').forEach(select => {
+//     select.addEventListener('change', function() {
+//         this.form.submit();
+//     });
+// });
+
+// Enhanced delete confirmation
+document.querySelectorAll('form').forEach(form => {
+    const deleteButton = form.querySelector('button[type="submit"].text-danger');
+    if (deleteButton) {
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to delete this fee structure? This action cannot be undone.')) {
+                e.preventDefault();
+            }
+        });
+    }
 });
 
-// Confirm delete actions
-document.querySelectorAll('form[onsubmit*="confirm"]').forEach(form => {
-    form.addEventListener('submit', function(e) {
-        if (!confirm('Are you sure you want to delete this fee structure? This action cannot be undone.')) {
-            e.preventDefault();
-        }
-    });
+// Status toggle confirmation
+document.querySelectorAll('form').forEach(form => {
+    const statusButton = form.querySelector('button[type="submit"].text-warning, button[type="submit"].text-success');
+    if (statusButton) {
+        form.addEventListener('submit', function(e) {
+            const action = statusButton.textContent.includes('Deactivate') ? 'deactivate' : 'activate';
+            if (!confirm(`Are you sure you want to ${action} this fee structure?`)) {
+                e.preventDefault();
+            }
+        });
+    }
 });
 </script>
 @endpush

@@ -1000,6 +1000,20 @@
                         Reports
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.ai-analytics.*') ? 'active' : '' }}" 
+                       href="{{ route('admin.ai-analytics.index') }}">
+                        <i class="bi bi-robot"></i>
+                        AI Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.search.*') ? 'active' : '' }}" 
+                       href="{{ route('admin.search.advanced') }}">
+                        <i class="bi bi-search"></i>
+                        Advanced Search
+                    </a>
+                </li>
                 @endif
                 
                 @if($admin->isSuperAdmin())
@@ -1051,6 +1065,24 @@
             </div>
             
             <div class="header-right">
+                <!-- Global Search -->
+                <div class="flex-grow-1 mx-4 d-none d-md-block">
+                    <div class="position-relative">
+                        <div class="input-group">
+                            <span class="input-group-text" style="background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); color: white;">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="admin-global-search" 
+                                   placeholder="Search students, payments, transactions..." 
+                                   style="background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); color: white;">
+                            <button class="btn btn-outline-light" type="button" onclick="window.location.href='{{ route('admin.search.advanced') }}'">
+                                <i class="bi bi-funnel"></i>
+                            </button>
+                        </div>
+                        <div id="admin-search-dropdown" class="position-absolute bg-white border rounded shadow-lg" style="top: 100%; left: 0; right: 0; z-index: 1000; max-height: 300px; overflow-y: auto; display: none;"></div>
+                    </div>
+                </div>
+                
                 <!-- Quick Actions -->
                 <div class="quick-actions me-3">
                     <button class="theme-toggle" onclick="toggleAdminTheme()" title="Toggle Theme">
@@ -1353,6 +1385,82 @@
         // Initialize admin theme on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadAdminTheme();
+        });
+
+        // Admin Global Search
+        function initAdminGlobalSearch() {
+            const searchInput = document.getElementById('admin-global-search');
+            if (!searchInput) return;
+            
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    hideAdminSearchResults();
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    performAdminGlobalSearch(query);
+                }, 300);
+            });
+        }
+
+        function performAdminGlobalSearch(query) {
+            fetch(`{{ route('admin.search.global') }}?q=${encodeURIComponent(query)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayAdminSearchResults(data.results);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+            });
+        }
+
+        function displayAdminSearchResults(results) {
+            const dropdown = document.getElementById('admin-search-dropdown');
+            
+            if (results.length === 0) {
+                dropdown.innerHTML = '<div class="p-3 text-muted">No results found</div>';
+            } else {
+                dropdown.innerHTML = results.map(result => `
+                    <a href="${result.url}" class="d-block p-3 text-decoration-none border-bottom">
+                        <div class="d-flex align-items-center">
+                            <i class="${result.icon} me-2 text-primary"></i>
+                            <div>
+                                <div class="fw-bold text-dark">${result.title}</div>
+                                <small class="text-muted">${result.subtitle}</small>
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+            }
+            
+            dropdown.style.display = 'block';
+        }
+
+        function hideAdminSearchResults() {
+            const dropdown = document.getElementById('admin-search-dropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        }
+        
+        // Initialize admin search
+        initAdminGlobalSearch();
+        
+        // Hide search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#admin-global-search') && !e.target.closest('#admin-search-dropdown')) {
+                hideAdminSearchResults();
+            }
         });
 
         // Global AJAX setup for CSRF token

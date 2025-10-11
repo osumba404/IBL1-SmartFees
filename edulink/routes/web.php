@@ -93,6 +93,7 @@ Route::prefix('student')->name('student.')->group(function () {
         
         // Payment routes
         Route::get('/payments/create', [StudentPaymentController::class, 'create'])->name('payments.create');
+        Route::get('/payment/create', [StudentPaymentController::class, 'create'])->name('payment.create');
         Route::post('/payments/initiate', [StudentPaymentController::class, 'initiate'])->name('payments.initiate');
         Route::get('/payments/success', [StudentPaymentController::class, 'success'])->name('payments.success');
         Route::get('/payments/cancel', [StudentPaymentController::class, 'cancel'])->name('payments.cancel');
@@ -102,10 +103,23 @@ Route::prefix('student')->name('student.')->group(function () {
             return 'Payment route works!';
         })->name('test.payment');
 
+        // AI Assistant routes
+        Route::post('/ai-assistant/get-assistance', [\App\Http\Controllers\Student\AIAssistantController::class, 'getAssistance'])->name('ai-assistant.get-assistance');
+        Route::get('/ai-assistant/payment-insights', [\App\Http\Controllers\Student\AIAssistantController::class, 'getPaymentInsights'])->name('ai-assistant.payment-insights');
+        
         // Notifications
         Route::get('/notifications', [StudentController::class, 'notifications'])->name('notifications.index');
         Route::post('/notifications/{notification}/read', [StudentController::class, 'markNotificationRead'])->name('notifications.read');
         
+        // Payment Plans Routes
+        Route::get('/payment-plans', function() { return view('student.payment-plans.index'); })->name('payment-plans.index');
+        Route::get('/payment-plans/create', function() { return view('student.payment-plans.create'); })->name('payment-plans.create');
+        Route::post('/payment-plans', function() { return redirect()->route('student.payment-plans.index'); })->name('payment-plans.store');
+        Route::get('/payment-plans/{id}', function($id) { return view('student.payment-plans.show', compact('id')); })->name('payment-plans.show');
+        Route::get('/payment-plans/{id}/edit', function($id) { return view('student.payment-plans.edit', compact('id')); })->name('payment-plans.edit');
+        Route::put('/payment-plans/{id}', function($id) { return redirect()->route('student.payment-plans.index'); })->name('payment-plans.update');
+        Route::delete('/payment-plans/{id}', function($id) { return redirect()->route('student.payment-plans.index'); })->name('payment-plans.destroy');
+
         // Import/Export Routes
         Route::post('/import', [StudentController::class, 'import'])->name('import');
         Route::get('/export', [StudentController::class, 'export'])->name('export');
@@ -218,13 +232,32 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/', [AdminController::class, 'feeStructures'])->name('index');
             Route::get('/create', [AdminController::class, 'createFeeStructure'])->name('create');
             Route::post('/', [AdminController::class, 'storeFeeStructure'])->name('store');
-            Route::get('/{feeStructure}', [AdminController::class, 'showFeeStructure'])->name('show'); // Add this line
+            Route::get('/{feeStructure}', [AdminController::class, 'showFeeStructure'])->name('show');
             Route::get('/{feeStructure}/edit', [AdminController::class, 'editFeeStructure'])->name('edit');
             Route::put('/{feeStructure}', [AdminController::class, 'updateFeeStructure'])->name('update');
             Route::delete('/{feeStructure}', [AdminController::class, 'destroyFeeStructure'])->name('destroy');
             Route::post('/{feeStructure}/toggle-status', [AdminController::class, 'toggleFeeStructureStatus'])->name('toggle-status');
             Route::post('/{feeStructure}/copy', [AdminController::class, 'copyFeeStructure'])->name('copy');
             Route::get('/{feeStructure}/breakdown', [AdminController::class, 'getFeeBreakdown'])->name('breakdown');
+        });
+        
+        // Search Routes
+        Route::prefix('search')->name('search.')->group(function () {
+            Route::get('/advanced', function() { return view('admin.search.advanced'); })->name('advanced');
+            Route::get('/global', [\App\Http\Controllers\Admin\SearchController::class, 'globalSearch'])->name('global');
+            Route::post('/students', [\App\Http\Controllers\Admin\SearchController::class, 'studentSearch'])->name('students');
+            Route::post('/payment-filters', [\App\Http\Controllers\Admin\SearchController::class, 'paymentFilters'])->name('payment-filters');
+            Route::get('/student-lookup', [\App\Http\Controllers\Admin\SearchController::class, 'studentLookup'])->name('student-lookup');
+            Route::post('/transactions', [\App\Http\Controllers\Admin\SearchController::class, 'transactionSearch'])->name('transactions');
+        });
+        
+        // AI Analytics Routes (requires view_reports permission)
+        Route::middleware('admin.auth:view_reports')->prefix('ai-analytics')->name('ai-analytics.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'index'])->name('index');
+            Route::get('/fraud-detection', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'fraudDetection'])->name('fraud-detection');
+            Route::get('/payment-behavior', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'paymentBehavior'])->name('payment-behavior');
+            Route::get('/support-dashboard', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'supportDashboard'])->name('support-dashboard');
+            Route::post('/generate-response', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'generateResponse'])->name('generate-response');
         });
         
         // Reports Routes (requires view_reports permission)
@@ -287,8 +320,10 @@ Route::get('/test-public', function() {
     return 'Public route works!';
 });
 
-// Include payment routes
-require __DIR__.'/payment.php';
+// Include payment routes if file exists
+if (file_exists(__DIR__.'/payment.php')) {
+    require __DIR__.'/payment.php';
+}
 
 // M-Pesa webhook routes (no middleware needed)
 Route::post('/webhooks/mpesa', [\App\Http\Controllers\PaymentController::class, 'callback'])->name('webhooks.mpesa');

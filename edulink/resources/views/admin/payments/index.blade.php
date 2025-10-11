@@ -218,57 +218,6 @@
                                         <i class="fas fa-check"></i> Verify
                                     </button>
                                     @endif
-                                </div>tEnrollment;
-                                    $course = $enrollment->course ?? null;
-                                    $semester = $enrollment->semester ?? null;
-                                @endphp
-                                @if($course)
-                                    {{ $course->name }}
-                                    @if($semester)
-                                    <br><small class="text-muted">{{ $semester->name }}</small>
-                                    @endif
-                                @else
-                                    <span class="text-muted">No Course</span>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="font-weight-bold">
-                                    {{ config('services.college.currency_symbol', 'KSh') }} {{ number_format($payment->amount, 2) }}
-                                </span>
-                                @if($payment->payment_type)
-                                <br><small class="text-muted">{{ ucfirst($payment->payment_type) }} Fee</small>
-                                @endif
-                            </td>
-                            <td class="text-dark">
-                                {{ $payment->payment_method ? ucfirst(str_replace('_', ' ', $payment->payment_method)) : 'Unknown' }}
-                            </td>
-                            <td class="text-dark">
-                                {{ $payment->status ? ucfirst($payment->status) : 'Unknown' }}
-                            </td>
-                            <td>
-                                <div>{{ $payment->created_at->format('M d, Y') }}</div>
-                                <small class="text-muted">{{ $payment->created_at->format('h:i A') }}</small>
-                            </td>
-                            <td>
-                                <div class="btn-group-vertical btn-group-sm" role="group" style="min-width: 120px;">
-                                    <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-outline-primary btn-sm mb-1" title="View Details">
-                                        <i class="fas fa-eye"></i> View
-                                    </a>
-                                    @if($payment->status === 'pending' && !$payment->is_verified)
-                                    <button type="button" class="btn btn-outline-success btn-sm mb-1" onclick="verifyPayment({{ $payment->id }})" title="Verify Payment">
-                                        <i class="fas fa-check"></i> Verify
-                                    </button>
-                                    @endif
-                                    @if($payment->status === 'completed')
-                                    <button type="button" class="btn btn-outline-warning btn-sm mb-1" onclick="showRefundModal({{ $payment->id }}, {{ $payment->amount }})" title="Process Refund">
-                                        <i class="fas fa-undo"></i> Refund
-                                    </button>
-                                    @endif
-                                    @if(in_array($payment->status, ['pending', 'failed']))
-                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelPayment({{ $payment->id }})" title="Cancel Payment">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </button>
-                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -413,5 +362,63 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 })
 </script>
+@endpush
+
+@push('styles')
+<style>
+    /* Dark mode fixes for tables */
+    [data-theme="dark"] .table-bordered {
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .table-bordered th,
+    [data-theme="dark"] .table-bordered td {
+        border-color: var(--border-color) !important;
+        background-color: var(--card-bg) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .table thead th {
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-color) !important;
+    }
+    
+    [data-theme="dark"] .font-weight-bold {
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .text-muted {
+        color: var(--text-secondary) !important;
+    }
+    
+    [data-theme="dark"] .badge {
+        color: white !important;
+    }
+    
+    [data-theme="dark"] .text-gray-800 {
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .text-primary {
+        color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .border-left-primary {
+        border-left-color: var(--primary-color) !important;
+    }
+    
+    [data-theme="dark"] .border-left-success {
+        border-left-color: var(--success-color) !important;
+    }
+    
+    [data-theme="dark"] .border-left-warning {
+        border-left-color: var(--warning-color) !important;
+    }
+    
+    [data-theme="dark"] .border-left-danger {
+        border-left-color: var(--danger-color) !important;
+    }
+</style>
 @endpush
 @endsection
