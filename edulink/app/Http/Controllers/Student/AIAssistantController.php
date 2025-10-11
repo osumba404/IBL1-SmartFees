@@ -3,64 +3,92 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
-use App\Services\AIAnalyticsService;
+use App\Services\GroqService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AIAssistantController extends Controller
 {
-    protected $aiService;
+    private $groqService;
 
-    public function __construct(AIAnalyticsService $aiService)
+    public function __construct(GroqService $groqService)
     {
-        $this->aiService = $aiService;
+        $this->groqService = $groqService;
     }
 
-    /**
-     * Get AI assistance for student queries
-     */
     public function getAssistance(Request $request)
     {
-        $query = $request->input('query');
-        $student = Auth::guard('student')->user();
-        
-        $context = [
-            'student_id' => $student->id,
-            'has_pending_payments' => $student->payments()->where('status', 'pending')->exists(),
-            'last_payment' => $student->payments()->latest()->first()
-        ];
-        
-        $response = $this->aiService->generateSupportResponse($query, $context);
-        
-        return response()->json($response);
-    }
+        $request->validate([
+            'query' => 'required|string|max:500'
+        ]);
 
-    /**
-     * Get personalized payment insights
-     */
-    public function getPaymentInsights()
-    {
         $student = Auth::guard('student')->user();
-        $insights = $this->aiService->analyzePaymentBehavior($student->id);
         
+        // Get student context for personalized responses
+        $studentContext = [
+            'student_id' => $student->student_id,
+            'name' => $student->first_name . ' ' . $student->last_name,
+            'outstanding_balance' => $student->getFinancialSummary()['outstanding_balance'] ?? 0,
+            'recent_payments' => $student->payments()->latest()->take(3)->pluck('amount', 'created_at')->toArray(),
+        ];
+
+        $query = $request->input('query');
+        $response = $this->groqService->generateStudentResponse($query, $studentContext);
+
         return response()->json([
-            'insights' => $insights,
-            'recommendations' => $this->generateRecommendations($insights)
+            'response' => $response,
+            'suggested_actions' => $this->getSuggestedActions($query)
         ]);
     }
 
-    private function generateRecommendations($insights)
+    public function getPaymentInsights()
     {
+        $student = Auth::guard('student')->user();
+        $financialSummary = $student->getFinancialSummary();
+        
         $recommendations = [];
         
-        if ($insights['risk_score'] > 50) {
-            $recommendations[] = 'Consider setting up automatic payment reminders';
+        if ($financialSummary['outstanding_balance'] > 0) {
+            $recommendations[] = "You have an outstanding balance of KES " . number_format($financialSummary['outstanding_balance'], 2);
         }
         
-        if (isset($insights['preferred_methods']['mpesa']) && $insights['preferred_methods']['mpesa'] > 5) {
-            $recommendations[] = 'You frequently use M-Pesa. Consider saving your payment details for faster checkout';
+        $recentPayments = $student->payments()->latest()->take(5)->get();
+        $mpesaCount = $recentPayments->where('payment_method', 'mpesa')->count();
+        
+        if ($mpesaCount >= 3) {
+            $recommendations[] = "You frequently use M-Pesa. Consider saving your payment details for faster checkout";
         }
         
-        return $recommendations;
+        if ($financialSummary['has_overdue_payments']) {
+            $recommendations[] = "You have overdue payments. Pay now to avoid late fees";
+        }
+
+        return response()->json([
+            'recommendations' => $recommendations
+        ]);
+    }
+
+    private function getSuggestedActions($query)
+    {
+        if (!is_string($query)) {
+            return [];
+        }
+        
+        $query = strtolower($query);
+        $actions = [];
+
+        if (str_contains($query, 'payment') || str_contains($query, 'pay')) {
+            $actions[] = 'Make Payment';
+        }
+        
+        if (str_contains($query, 'balance') || str_contains($query, 'owe')) {
+            $actions[] = 'View Balance';
+        }
+        
+        if (str_contains($query, 'receipt') || str_contains($query, 'statement')) {
+            $actions[] = 'Download Receipt';
+        }
+
+        return $actions;
     }
 }

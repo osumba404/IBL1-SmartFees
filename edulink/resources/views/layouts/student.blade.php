@@ -1956,70 +1956,6 @@
             </div>
             
             <div class="header-right">
-                <!-- Notifications -->
-                <div class="notification-center me-3">
-                    <button class="notification-btn" data-bs-toggle="dropdown">
-                        <i class="bi bi-bell"></i>
-                        @php
-                            $unreadCount = \App\Models\PaymentNotification::where('student_id', $student->id)->whereNull('read_at')->count();
-                        @endphp
-                        @if($unreadCount > 0)
-                            <span class="notification-count">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
-                        @endif
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-end notification-dropdown">
-                        <div class="notification-header">
-                            <h6 class="mb-0">Notifications</h6>
-                            @if($unreadCount > 0)
-                                <small class="text-muted">{{ $unreadCount }} unread</small>
-                            @endif
-                        </div>
-                        <div class="notification-list">
-                            @php
-                                $notifications = \App\Models\PaymentNotification::where('student_id', $student->id)
-                                    ->latest()->take(5)->get();
-                            @endphp
-                            @forelse($notifications as $notification)
-                            <div class="notification-item {{ $notification->read_at ? '' : 'unread' }}">
-                                <div class="notification-icon">
-                                    @switch($notification->notification_type)
-                                        @case('payment_success')
-                                        @case('payment_confirmed')
-                                            <i class="bi bi-check-circle text-success"></i>
-                                            @break
-                                        @case('payment_reminder')
-                                        @case('payment_overdue')
-                                            <i class="bi bi-alarm text-warning"></i>
-                                            @break
-                                        @case('enrollment')
-                                            <i class="bi bi-person-check text-info"></i>
-                                            @break
-                                        @default
-                                            <i class="bi bi-bell text-primary"></i>
-                                    @endswitch
-                                </div>
-                                <div class="notification-content">
-                                    <div class="notification-title">{{ $notification->title }}</div>
-                                    <div class="notification-message">{{ Str::limit($notification->message, 60) }}</div>
-                                    <div class="notification-time">{{ $notification->created_at->diffForHumans() }}</div>
-                                </div>
-                            </div>
-                            @empty
-                            <div class="notification-empty">
-                                <i class="bi bi-bell-slash"></i>
-                                <p>No notifications yet</p>
-                            </div>
-                            @endforelse
-                        </div>
-                        @if($notifications->count() > 0)
-                        <div class="notification-footer">
-                            <a href="{{ route('student.notifications.index') }}" class="btn btn-sm btn-outline-primary w-100">
-                                View All Notifications
-                            </a>
-                        </div>
-                        @endif
-                    </div>
-                </div>
                 
                 <!-- User Menu -->
                 <div class="user-menu">
@@ -2061,6 +1997,15 @@
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="{{ route('student.profile') }}">
                                 <i class="bi bi-person me-2"></i>My Profile
+                            </a>
+                            <a class="dropdown-item" href="{{ route('student.notifications.index') }}">
+                                <i class="bi bi-bell me-2"></i>Notifications
+                                @php
+                                    $unreadCount = \App\Models\PaymentNotification::where('student_id', $student->id)->whereNull('read_at')->count();
+                                @endphp
+                                @if($unreadCount > 0)
+                                    <span class="badge bg-danger ms-auto">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
+                                @endif
                             </a>
                             <a class="dropdown-item" href="{{ route('student.settings') }}">
                                 <i class="bi bi-gear me-2"></i>Settings
@@ -2351,25 +2296,6 @@
         // Initialize theme on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadTheme();
-            
-            // Add theme toggle button to header
-            const headerRight = document.querySelector('.header-right');
-            if (headerRight) {
-                const themeToggle = document.createElement('button');
-                themeToggle.className = 'theme-toggle me-2';
-                themeToggle.onclick = toggleTheme;
-                themeToggle.title = 'Toggle Theme';
-                themeToggle.innerHTML = '<i class="bi bi-moon-fill" id="theme-icon"></i>';
-                
-                const notificationCenter = headerRight.querySelector('.notification-center');
-                headerRight.insertBefore(themeToggle, notificationCenter);
-                
-                const currentTheme = document.documentElement.getAttribute('data-theme');
-                const headerIcon = document.getElementById('theme-icon');
-                if (currentTheme === 'dark' && headerIcon) {
-                    headerIcon.className = 'bi bi-sun-fill';
-                }
-            }
         });
 
         // Fix pagination arrows function with enhanced targeting
