@@ -23,8 +23,32 @@ class AIAnalyticsController extends Controller
     {
         $analytics = $this->aiService->generatePredictiveAnalytics();
         $paymentBehavior = $this->aiService->analyzePaymentBehavior();
+        $recommendations = $this->aiService->generateRecommendations();
+        $detailedMetrics = $this->aiService->getDetailedMetrics();
         
-        return view('admin.ai-analytics.index', compact('analytics', 'paymentBehavior'));
+        return view('admin.ai-analytics.index', compact('analytics', 'paymentBehavior', 'recommendations', 'detailedMetrics'));
+    }
+
+    /**
+     * Get analytics data via AJAX
+     */
+    public function getAnalyticsData(Request $request)
+    {
+        $type = $request->get('type');
+        $period = $request->get('period', '30');
+        
+        switch ($type) {
+            case 'payment_trends':
+                return response()->json($this->aiService->getPaymentTrends($period));
+            case 'revenue_forecast':
+                return response()->json($this->aiService->getRevenueForecast($period));
+            case 'risk_analysis':
+                return response()->json($this->aiService->getRiskAnalysis());
+            case 'payment_methods':
+                return response()->json($this->aiService->getPaymentMethodAnalysis($period));
+            default:
+                return response()->json(['error' => 'Invalid type']);
+        }
     }
 
     /**

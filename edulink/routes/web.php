@@ -254,6 +254,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // AI Analytics Routes (requires view_reports permission)
         Route::middleware('admin.auth:view_reports')->prefix('ai-analytics')->name('ai-analytics.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'index'])->name('index');
+            Route::get('/data', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'getAnalyticsData'])->name('data');
             Route::get('/fraud-detection', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'fraudDetection'])->name('fraud-detection');
             Route::get('/payment-behavior', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'paymentBehavior'])->name('payment-behavior');
             Route::get('/support-dashboard', [\App\Http\Controllers\Admin\AIAnalyticsController::class, 'supportDashboard'])->name('support-dashboard');

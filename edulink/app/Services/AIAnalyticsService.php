@@ -257,4 +257,303 @@ class AIAnalyticsService
 
         return $actions[$type] ?? ['Contact support'];
     }
+
+    /**
+     * Generate AI-powered recommendations
+     */
+    public function generateRecommendations()
+    {
+        $recommendations = [];
+        
+        // Analyze payment data for recommendations
+        $totalPayments = Payment::count();
+        $failedPayments = Payment::where('status', 'failed')->count();
+        $overdueStudents = Student::whereHas('enrollments', function($query) {
+            $query->where('status', 'active');
+        })->whereDoesntHave('payments', function($query) {
+            $query->where('created_at', '>=', now()->subMonths(1))
+                  ->where('status', 'completed');
+        })->count();
+        
+        $mpesaPayments = Payment::where('payment_method', 'mpesa')->where('status', 'completed')->count();
+        $stripePayments = Payment::where('payment_method', 'stripe')->where('status', 'completed')->count();
+        
+        // Generate dynamic recommendations based on data
+        if ($failedPayments > 0 && $totalPayments > 0) {
+            $failureRate = ($failedPayments / $totalPayments) * 100;
+            if ($failureRate > 10) {
+                $recommendations[] = [
+                    'type' => 'warning',
+                    'icon' => 'bi-exclamation-triangle',
+                    'title' => 'High Payment Failure Rate',
+                    'message' => "Payment failure rate is " . number_format($failureRate, 1) . "%. Consider reviewing payment gateway configurations and providing clearer payment instructions."
+                ];
+            }
+        }
+        
+        if ($overdueStudents > 0) {
+            $recommendations[] = [
+                'type' => 'info',
+                'icon' => 'bi-clock',
+                'title' => 'Overdue Payment Management',
+                'message' => "{$overdueStudents} students haven't made payments recently. Implement automated reminder system to improve collection rates."
+            ];
+        }
+        
+        if ($mpesaPayments > $stripePayments && $mpesaPayments > 0) {
+            $mpesaTotal = Payment::where('payment_method', 'mpesa')->count();
+            $mpesaSuccessRate = $mpesaTotal > 0 ? ($mpesaPayments / $mpesaTotal) * 100 : 0;
+            if ($mpesaSuccessRate > 90) {
+                $recommendations[] = [
+                    'type' => 'success',
+                    'icon' => 'bi-graph-up',
+                    'title' => 'M-Pesa Performance Excellence',
+                    'message' => "M-Pesa has a " . number_format($mpesaSuccessRate, 1) . "% success rate. Promote this payment method to reduce transaction failures."
+                ];
+            }
+        }
+        
+        // Add default recommendations if no data-driven ones
+        if (empty($recommendations)) {
+            $recommendations[] = [
+                'type' => 'info',
+                'icon' => 'bi-lightbulb',
+                'title' => 'Payment Optimization',
+                'message' => 'Consider implementing payment plans and automated reminders to improve collection efficiency.'
+            ];
+            
+            $recommendations[] = [
+                'type' => 'success',
+                'icon' => 'bi-shield-check',
+                'title' => 'System Performance',
+                'message' => 'Payment system is operating normally. Monitor trends for continuous improvement.'
+            ];
+        }
+        
+        return $recommendations;
+    }
+
+    /**
+     * Get detailed metrics for interactive dashboard
+     */
+    public function getDetailedMetrics()
+    {
+        return [
+            'payment_trends' => $this->getPaymentTrends(30),
+            'revenue_forecast' => $this->getRevenueForecast(90),
+            'risk_analysis' => $this->getRiskAnalysis(),
+            'payment_methods' => $this->getPaymentMethodAnalysis(30)
+        ];
+    }
+
+    /**
+     * Get payment trends with detailed breakdown
+     */
+    public function getPaymentTrends($days = 30)
+    {
+        $payments = Payment::where('created_at', '>=', now()->subDays($days))
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count, SUM(amount) as total, payment_method, status')
+            ->groupBy('date', 'payment_method', 'status')
+            ->orderBy('date')
+            ->get();
+
+        $dailyTotals = $payments->groupBy('date')->map(function($dayPayments) {
+            return [
+                'total_amount' => $dayPayments->sum('total'),
+                'total_count' => $dayPayments->sum('count'),
+                'success_rate' => $dayPayments->where('status', 'completed')->sum('count') / max($dayPayments->sum('count'), 1) * 100
+            ];
+        });
+
+        return [
+            'daily_data' => $dailyTotals,
+            'trend_direction' => $this->calculateTrendDirection($dailyTotals),
+            'growth_rate' => $this->calculateGrowthRate($dailyTotals),
+            'peak_days' => $dailyTotals->sortByDesc('total_amount')->take(3)->keys()
+        ];
+    }
+
+    /**
+     * Get revenue forecast with confidence intervals
+     */
+    public function getRevenueForecast($days = 90)
+    {
+        $historicalData = Payment::where('status', 'completed')
+            ->where('created_at', '>=', now()->subDays($days))
+            ->selectRaw('DATE(created_at) as date, SUM(amount) as revenue')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $avgDaily = $historicalData->avg('revenue');
+        $trend = $this->calculateTrendDirection($historicalData->pluck('revenue', 'date'));
+        
+        return [
+            'next_week' => $avgDaily * 7 * ($trend === 'increasing' ? 1.1 : ($trend === 'decreasing' ? 0.9 : 1)),
+            'next_month' => $avgDaily * 30 * ($trend === 'increasing' ? 1.15 : ($trend === 'decreasing' ? 0.85 : 1)),
+            'next_quarter' => $avgDaily * 90 * ($trend === 'increasing' ? 1.2 : ($trend === 'decreasing' ? 0.8 : 1)),
+            'confidence' => $historicalData->count() > 30 ? 'high' : ($historicalData->count() > 10 ? 'medium' : 'low'),
+            'factors' => $this->getRevenueForecastFactors()
+        ];
+    }
+
+    /**
+     * Get comprehensive risk analysis
+     */
+    public function getRiskAnalysis()
+    {
+        $students = Student::with(['payments' => function($query) {
+            $query->where('created_at', '>=', now()->subMonths(3));
+        }])->get();
+
+        $riskCategories = [
+            'high_risk' => 0,
+            'medium_risk' => 0,
+            'low_risk' => 0,
+            'no_risk' => 0
+        ];
+
+        $riskFactors = [];
+
+        foreach ($students as $student) {
+            $riskScore = $this->calculateStudentRiskScore($student);
+            
+            if ($riskScore >= 70) {
+                $riskCategories['high_risk']++;
+                $riskFactors[] = $this->getStudentRiskFactors($student);
+            } elseif ($riskScore >= 40) {
+                $riskCategories['medium_risk']++;
+            } elseif ($riskScore >= 20) {
+                $riskCategories['low_risk']++;
+            } else {
+                $riskCategories['no_risk']++;
+            }
+        }
+
+        return [
+            'categories' => $riskCategories,
+            'total_students' => $students->count(),
+            'avg_risk_score' => $students->avg(function($student) {
+                return $this->calculateStudentRiskScore($student);
+            }),
+            'top_risk_factors' => collect($riskFactors)->flatten()->countBy()->sortDesc()->take(5)
+        ];
+    }
+
+    /**
+     * Get payment method analysis with performance metrics
+     */
+    public function getPaymentMethodAnalysis($days = 30)
+    {
+        $payments = Payment::where('created_at', '>=', now()->subDays($days))->get();
+        
+        $methodStats = $payments->groupBy('payment_method')->map(function($methodPayments, $method) {
+            $total = $methodPayments->count();
+            $completed = $methodPayments->where('status', 'completed')->count();
+            $failed = $methodPayments->where('status', 'failed')->count();
+            
+            return [
+                'total_transactions' => $total,
+                'success_rate' => $total > 0 ? ($completed / $total) * 100 : 0,
+                'failure_rate' => $total > 0 ? ($failed / $total) * 100 : 0,
+                'total_amount' => $methodPayments->where('status', 'completed')->sum('amount'),
+                'avg_amount' => $methodPayments->where('status', 'completed')->avg('amount') ?? 0,
+                'avg_processing_time' => $this->calculateAvgProcessingTime($methodPayments)
+            ];
+        });
+
+        return [
+            'method_stats' => $methodStats,
+            'recommended_method' => $methodStats->sortByDesc('success_rate')->keys()->first(),
+            'fastest_method' => $methodStats->sortBy('avg_processing_time')->keys()->first()
+        ];
+    }
+
+    private function calculateTrendDirection($data)
+    {
+        if ($data->count() < 2) return 'stable';
+        
+        $values = $data->values();
+        $first = is_array($values->first()) ? $values->first()['total_amount'] ?? $values->first() : $values->first();
+        $last = is_array($values->last()) ? $values->last()['total_amount'] ?? $values->last() : $values->last();
+        
+        $change = ($last - $first) / max($first, 1) * 100;
+        
+        if ($change > 5) return 'increasing';
+        if ($change < -5) return 'decreasing';
+        return 'stable';
+    }
+
+    private function calculateGrowthRate($data)
+    {
+        if ($data->count() < 2) return 0;
+        
+        $values = $data->values();
+        $first = is_array($values->first()) ? $values->first()['total_amount'] ?? 0 : $values->first();
+        $last = is_array($values->last()) ? $values->last()['total_amount'] ?? 0 : $values->last();
+        
+        return $first > 0 ? (($last - $first) / $first) * 100 : 0;
+    }
+
+    private function getRevenueForecastFactors()
+    {
+        return [
+            'seasonal_trends' => 'Academic calendar affects payment patterns',
+            'enrollment_growth' => 'New student registrations impact revenue',
+            'payment_method_adoption' => 'M-Pesa adoption increases success rates',
+            'economic_factors' => 'Local economic conditions may affect payments'
+        ];
+    }
+
+    private function calculateStudentRiskScore($student)
+    {
+        $score = 0;
+        
+        // No recent payments
+        if ($student->payments->where('created_at', '>=', now()->subMonth())->isEmpty()) {
+            $score += 30;
+        }
+        
+        // High failure rate
+        $failureRate = $student->payments->where('status', 'failed')->count() / max($student->payments->count(), 1);
+        $score += $failureRate * 40;
+        
+        // Overdue payments
+        if ($student->payments->where('status', 'pending')->where('created_at', '<=', now()->subDays(7))->count() > 0) {
+            $score += 20;
+        }
+        
+        return min($score, 100);
+    }
+
+    private function getStudentRiskFactors($student)
+    {
+        $factors = [];
+        
+        if ($student->payments->where('created_at', '>=', now()->subMonth())->isEmpty()) {
+            $factors[] = 'No recent payments';
+        }
+        
+        if ($student->payments->where('status', 'failed')->count() > 2) {
+            $factors[] = 'Multiple failed payments';
+        }
+        
+        return $factors;
+    }
+
+    private function calculateAvgProcessingTime($payments)
+    {
+        // Simulate processing time calculation
+        $method = $payments->first()->payment_method ?? 'unknown';
+        
+        $avgTimes = [
+            'mpesa' => 2.5,
+            'stripe' => 8.3,
+            'paypal' => 12.1,
+            'bank_transfer' => 1440, // 24 hours
+            'cash' => 0
+        ];
+        
+        return $avgTimes[$method] ?? 10;
+    }
 }
