@@ -233,9 +233,14 @@
                                         <div class="card-body">
                                             <h6 class="card-title">{{ $enrollment->course->name }}</h6>
                                             <p class="card-text small text-muted">{{ $enrollment->course->course_code }}</p>
-                                            <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <span class="badge bg-success">{{ ucfirst($enrollment->status) }}</span>
                                                 <small class="text-muted">{{ $enrollment->course->duration_months }} months</small>
+                                            </div>
+                                            <div class="d-grid">
+                                                <a href="{{ route('payment.create', ['enrollment_id' => $enrollment->id]) }}" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-credit-card me-1"></i>Pay for this Course
+                                                </a>
                                             </div>
                                         </div>
                                     </div>

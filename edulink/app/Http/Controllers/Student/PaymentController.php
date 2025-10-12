@@ -8,12 +8,29 @@ use Illuminate\Support\Facades\Auth;
 
 class PaymentController extends Controller
 {
-    public function create()
+    public function create(Request $request)
     {
         $student = Auth::guard('student')->user();
-        $enrollment = $student->enrollments()->with(['course', 'semester'])->first();
+        $enrollments = $student->enrollments()->with(['course', 'semester'])->get();
         
-        return view('student.payments.create', compact('student', 'enrollment'));
+        // Get specific enrollment if provided
+        $selectedEnrollment = null;
+        if ($request->has('enrollment_id')) {
+            $selectedEnrollment = $enrollments->where('id', $request->enrollment_id)->first();
+        }
+        
+        // Default to first enrollment if none selected
+        $enrollment = $selectedEnrollment ?: $enrollments->first();
+        
+        // Get pre-filled amount if provided
+        $prefilledAmount = $request->get('amount');
+        
+        // Check if this is the main payment route or student payment route
+        if ($request->route()->getName() === 'payment.create') {
+            return view('payment.create', compact('student', 'enrollment', 'enrollments', 'prefilledAmount'));
+        }
+        
+        return view('student.payments.create', compact('student', 'enrollment', 'enrollments', 'prefilledAmount'));
     }
 
     public function initiate(Request $request)
@@ -30,7 +47,7 @@ class PaymentController extends Controller
         $enrollment = null;
         
         if ($request->enrollment_id) {
-            $enrollment = $student->enrollments()->find($request->enrollment_id);
+            $enrollment = $student->enrollments()->with('course')->find($request->enrollment_id);
         } else {
             $enrollment = $student->enrollments()->with('course')->first();
         }
@@ -55,7 +72,7 @@ class PaymentController extends Controller
         $payment->save();
 
         // Redirect to the main payment processing route with payment data
-        return redirect()->route('payment.create')
+        return redirect()->route('payment.create', ['enrollment_id' => $enrollment->id])
             ->with('success', 'Payment initiated successfully')
             ->with('payment_data', [
                 'payment_id' => $payment->id,

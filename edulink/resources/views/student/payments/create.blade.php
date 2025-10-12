@@ -22,13 +22,37 @@
                         @csrf
                         
                         <div class="mb-3">
-                            <label class="form-label">Course</label>
-                            <input type="text" class="form-control" value="{{ $enrollment->course->name ?? 'N/A' }}" readonly>
-                            @if($enrollment)
-                            <input type="hidden" name="enrollment_id" value="{{ $enrollment->id }}">
-                            <input type="hidden" name="course_id" value="{{ $enrollment->course_id }}">
+                            <label for="enrollment_select" class="form-label">Select Course/Program</label>
+                            @if($enrollments->count() > 1)
+                                <select class="form-select" id="enrollment_select" name="enrollment_id" onchange="updateEnrollmentDetails()">
+                                    @foreach($enrollments as $enroll)
+                                        <option value="{{ $enroll->id }}" 
+                                                {{ $enrollment && $enrollment->id == $enroll->id ? 'selected' : '' }}
+                                                data-course="{{ $enroll->course->name ?? 'N/A' }}"
+                                                data-semester="{{ $enroll->semester->name ?? 'N/A' }}"
+                                                data-fee="{{ $enroll->course->feeStructures->first()->total_amount ?? 0 }}">
+                                            {{ $enroll->course->name ?? 'N/A' }} - {{ $enroll->semester->name ?? 'N/A' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <input type="text" class="form-control" value="{{ $enrollment->course->name ?? 'N/A' }} - {{ $enrollment->semester->name ?? 'N/A' }}" readonly>
+                                <input type="hidden" name="enrollment_id" value="{{ $enrollment->id ?? '' }}">
                             @endif
                         </div>
+                        
+                        @if($enrollments->count() > 1)
+                        <div class="mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Program Details</h6>
+                                    <p class="mb-1"><strong>Course:</strong> <span id="selected-course">{{ $enrollment->course->name ?? 'N/A' }}</span></p>
+                                    <p class="mb-1"><strong>Semester:</strong> <span id="selected-semester">{{ $enrollment->semester->name ?? 'N/A' }}</span></p>
+                                    <p class="mb-0"><strong>Total Fee:</strong> KES <span id="selected-fee">{{ number_format($enrollment->course->feeStructures->first()->total_amount ?? 0) }}</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
                         
                         <div class="mb-3">
                             <label for="amount" class="form-label">Amount (KSh)</label>
@@ -124,6 +148,21 @@ function selectPaymentMethod(method) {
     }
     
     document.getElementById('payButton').disabled = false;
+}
+
+function updateEnrollmentDetails() {
+    const select = document.getElementById('enrollment_select');
+    if (!select) return;
+    
+    const selectedOption = select.options[select.selectedIndex];
+    
+    const courseSpan = document.getElementById('selected-course');
+    const semesterSpan = document.getElementById('selected-semester');
+    const feeSpan = document.getElementById('selected-fee');
+    
+    if (courseSpan) courseSpan.textContent = selectedOption.dataset.course;
+    if (semesterSpan) semesterSpan.textContent = selectedOption.dataset.semester;
+    if (feeSpan) feeSpan.textContent = new Intl.NumberFormat().format(selectedOption.dataset.fee);
 }
 </script>
 @endsection

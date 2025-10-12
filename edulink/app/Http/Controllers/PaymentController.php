@@ -10,10 +10,22 @@ use App\Services\NotificationService;
 
 class PaymentController extends Controller
 {
-    public function create()
+    public function create(Request $request = null)
     {
         $student = auth('student')->user();
-        $enrollment = $student->enrollments()->with('course')->first();
+        $enrollments = $student->enrollments()->with(['course', 'semester'])->get();
+        
+        // Get specific enrollment if provided
+        $selectedEnrollment = null;
+        if ($request && $request->has('enrollment_id')) {
+            $selectedEnrollment = $enrollments->where('id', $request->enrollment_id)->first();
+        }
+        
+        // Default to first enrollment if none selected
+        $enrollment = $selectedEnrollment ?: $enrollments->first();
+        
+        // Get pre-filled amount if provided
+        $prefilledAmount = request('amount');
         
         // Check if there's payment data from the student portal
         $paymentData = session('payment_data');
@@ -23,7 +35,7 @@ class PaymentController extends Controller
             $existingPayment = Payment::find($paymentData['payment_id']);
         }
         
-        return view('payment.create', compact('student', 'enrollment', 'paymentData', 'existingPayment'));
+        return view('payment.create', compact('student', 'enrollment', 'enrollments', 'paymentData', 'existingPayment', 'prefilledAmount'));
     }
     
     public function process(Request $request)
@@ -69,7 +81,13 @@ class PaymentController extends Controller
             } else {
                 // Create payment record with enrollment
                 $student = auth('student')->user();
-                $enrollment = $student->enrollments()->with('course')->first();
+                $enrollment = null;
+                
+                if ($request->enrollment_id) {
+                    $enrollment = $student->enrollments()->with('course')->find($request->enrollment_id);
+                } else {
+                    $enrollment = $student->enrollments()->with('course')->first();
+                }
                 
                 $payment = new Payment();
                 $payment->student_id = $student->id;
@@ -308,11 +326,16 @@ class PaymentController extends Controller
                 if ($payment->student_id) {
                     $student = \App\Models\Student::find($payment->student_id);
                     if ($student) {
-                        $enrollment = $student->enrollments()->first();
+                        $enrollment = null;
+                        if ($payment->student_enrollment_id) {
+                            $enrollment = \App\Models\StudentEnrollment::find($payment->student_enrollment_id);
+                        } else {
+                            $enrollment = $student->enrollments()->first();
+                        }
+                        
                         if ($enrollment) {
-                            $enrollment->fees_paid += $payment->amount;
-                            $enrollment->save();
-                            Log::info('Updated enrollment balance', ['student_id' => $student->id, 'amount' => $payment->amount]);
+                            $enrollment->updatePaymentStatus($payment->amount);
+                            Log::info('Updated enrollment balance', ['student_id' => $student->id, 'enrollment_id' => $enrollment->id, 'amount' => $payment->amount]);
                         }
                         
                         // Send payment confirmation notification
@@ -364,11 +387,16 @@ class PaymentController extends Controller
                 if ($payment->student_id) {
                     $student = \App\Models\Student::find($payment->student_id);
                     if ($student) {
-                        $enrollment = $student->enrollments()->first();
+                        $enrollment = null;
+                        if ($payment->student_enrollment_id) {
+                            $enrollment = \App\Models\StudentEnrollment::find($payment->student_enrollment_id);
+                        } else {
+                            $enrollment = $student->enrollments()->first();
+                        }
+                        
                         if ($enrollment) {
-                            $enrollment->fees_paid += $payment->amount;
-                            $enrollment->save();
-                            Log::info('Updated enrollment balance', ['student_id' => $student->id, 'amount' => $payment->amount]);
+                            $enrollment->updatePaymentStatus($payment->amount);
+                            Log::info('Updated enrollment balance', ['student_id' => $student->id, 'enrollment_id' => $enrollment->id, 'amount' => $payment->amount]);
                         }
                         
                         // Send payment confirmation notification
@@ -406,7 +434,13 @@ class PaymentController extends Controller
             } else {
                 // Create payment record with enrollment
                 $student = auth('student')->user();
-                $enrollment = $student->enrollments()->with('course')->first();
+                $enrollment = null;
+                
+                if ($request->enrollment_id) {
+                    $enrollment = $student->enrollments()->with('course')->find($request->enrollment_id);
+                } else {
+                    $enrollment = $student->enrollments()->with('course')->first();
+                }
                 
                 $payment = new Payment();
                 $payment->student_id = $student->id;
@@ -508,10 +542,15 @@ class PaymentController extends Controller
                 if ($payment->student_id) {
                     $student = \App\Models\Student::find($payment->student_id);
                     if ($student) {
-                        $enrollment = $student->enrollments()->first();
+                        $enrollment = null;
+                        if ($payment->student_enrollment_id) {
+                            $enrollment = \App\Models\StudentEnrollment::find($payment->student_enrollment_id);
+                        } else {
+                            $enrollment = $student->enrollments()->first();
+                        }
+                        
                         if ($enrollment) {
-                            $enrollment->fees_paid += $payment->amount;
-                            $enrollment->save();
+                            $enrollment->updatePaymentStatus($payment->amount);
                         }
                         
                         // Send payment confirmation notification
@@ -574,7 +613,13 @@ class PaymentController extends Controller
             } else {
                 // Create payment record with enrollment
                 $student = auth('student')->user();
-                $enrollment = $student->enrollments()->with('course')->first();
+                $enrollment = null;
+                
+                if ($request->enrollment_id) {
+                    $enrollment = $student->enrollments()->with('course')->find($request->enrollment_id);
+                } else {
+                    $enrollment = $student->enrollments()->with('course')->first();
+                }
                 
                 $payment = new Payment();
                 $payment->student_id = $student->id;
@@ -661,10 +706,15 @@ class PaymentController extends Controller
                         if ($payment->student_id) {
                             $student = \App\Models\Student::find($payment->student_id);
                             if ($student) {
-                                $enrollment = $student->enrollments()->first();
+                                $enrollment = null;
+                                if ($payment->student_enrollment_id) {
+                                    $enrollment = \App\Models\StudentEnrollment::find($payment->student_enrollment_id);
+                                } else {
+                                    $enrollment = $student->enrollments()->first();
+                                }
+                                
                                 if ($enrollment) {
-                                    $enrollment->fees_paid += $payment->amount;
-                                    $enrollment->save();
+                                    $enrollment->updatePaymentStatus($payment->amount);
                                 }
                                 
                                 // Send payment confirmation notification

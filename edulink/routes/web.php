@@ -112,11 +112,66 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::post('/notifications/{notification}/read', [StudentController::class, 'markNotificationRead'])->name('notifications.read');
         
         // Payment Plans Routes
-        Route::get('/payment-plans', function() { return view('student.payment-plans.index'); })->name('payment-plans.index');
-        Route::get('/payment-plans/create', function() { return view('student.payment-plans.create'); })->name('payment-plans.create');
-        Route::post('/payment-plans', function() { return redirect()->route('student.payment-plans.index'); })->name('payment-plans.store');
-        Route::get('/payment-plans/{id}', function($id) { return view('student.payment-plans.show', compact('id')); })->name('payment-plans.show');
-        Route::get('/payment-plans/{id}/edit', function($id) { return view('student.payment-plans.edit', compact('id')); })->name('payment-plans.edit');
+        Route::get('/payment-plans', function() { 
+            $student = auth('student')->user();
+            $paymentPlans = \App\Models\PaymentPlan::where('student_id', $student->id)
+                ->with(['enrollment.course', 'installments'])
+                ->get();
+            return view('student.payment-plans.index', compact('paymentPlans')); 
+        })->name('payment-plans.index');
+        Route::get('/payment-plans/create', function() { 
+            $student = auth('student')->user();
+            $enrollments = $student->enrollments()->with('course')->get();
+            $enrollment = $enrollments->first(); // Default to first enrollment
+            
+            // Calculate outstanding balance if enrollment exists
+            if ($enrollment) {
+                $totalFee = $enrollment->total_fees_due > 0 ? $enrollment->total_fees_due : ($enrollment->course->total_fee ?? 100000);
+                $paidAmount = $enrollment->fees_paid ?? 0;
+                $enrollment->outstanding_balance = max(0, $totalFee - $paidAmount);
+            }
+            
+            return view('student.payment-plans.create', compact('enrollments', 'enrollment')); 
+        })->name('payment-plans.create');
+        Route::post('/payment-plans', function(\Illuminate\Http\Request $request) { 
+            $student = auth('student')->user();
+            
+            // Create payment plan
+            $paymentPlan = \App\Models\PaymentPlan::create([
+                'student_id' => $student->id,
+                'student_enrollment_id' => $request->enrollment_id,
+                'plan_name' => $request->plan_name,
+                'total_amount' => $request->total_amount,
+                'total_installments' => $request->total_installments,
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+            
+            // Create installments
+            $installmentAmounts = $request->installment_amounts;
+            $installmentDates = $request->installment_dates;
+            
+            for ($i = 0; $i < count($installmentAmounts); $i++) {
+                \App\Models\PaymentInstallment::create([
+                    'payment_plan_id' => $paymentPlan->id,
+                    'installment_number' => $i + 1,
+                    'amount' => $installmentAmounts[$i],
+                    'due_date' => $installmentDates[$i],
+                    'status' => 'pending'
+                ]);
+            }
+            
+            return redirect()->route('student.payment-plans.index')->with('success', 'Payment plan created successfully!'); 
+        })->name('payment-plans.store');
+        Route::get('/payment-plans/{id}', function($id) { 
+            $paymentPlan = \App\Models\PaymentPlan::with(['enrollment.course', 'installments'])->findOrFail($id);
+            return view('student.payment-plans.show', compact('paymentPlan')); 
+        })->name('payment-plans.show');
+        Route::get('/payment-plans/{id}/edit', function($id) { 
+            $paymentPlan = collect(); // Placeholder
+            return view('student.payment-plans.edit', compact('id', 'paymentPlan')); 
+        })->name('payment-plans.edit');
         Route::put('/payment-plans/{id}', function($id) { return redirect()->route('student.payment-plans.index'); })->name('payment-plans.update');
         Route::delete('/payment-plans/{id}', function($id) { return redirect()->route('student.payment-plans.index'); })->name('payment-plans.destroy');
 

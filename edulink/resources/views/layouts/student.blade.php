@@ -632,13 +632,94 @@
 
         [data-theme="dark"] .card-subtitle {
             color: var(--text-secondary) !important;
-        }rk-color);
-            background-color: #f8fafc;
+        }
+
+        /* Payment status badges in dark mode */
+        [data-theme="dark"] .badge.bg-success {
+            background-color: #10b981 !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] .badge.bg-warning {
+            background-color: #f59e0b !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] .badge.bg-danger {
+            background-color: #ef4444 !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] .badge.bg-info {
+            background-color: #06b6d4 !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] .badge.bg-primary {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] .badge.bg-secondary {
+            background-color: #6b7280 !important;
+            color: white !important;
+        }
+
+        /* Ensure all badges are visible in dark mode */
+        [data-theme="dark"] .badge {
+            color: white !important;
+            font-weight: 600 !important;
+        }
+
+        /* Payment status specific styling */
+        [data-theme="dark"] .payment-status.completed,
+        [data-theme="dark"] .status-completed {
+            background-color: #10b981 !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] .payment-status.pending,
+        [data-theme="dark"] .status-pending {
+            background-color: #f59e0b !important;
+            color: white !important;
+        }
+
+        [data-theme="dark"] .payment-status.failed,
+        [data-theme="dark"] .status-failed {
+            background-color: #ef4444 !important;
+            color: white !important;
         }
 
         .badge {
             font-size: 0.75rem;
             font-weight: 500;
+        }
+
+        /* Payment status badges */
+        .payment-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .payment-status.completed,
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .payment-status.pending,
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .payment-status.failed,
+        .status-failed {
+            background-color: #fee2e2;
+            color: #991b1b;
         }
 
         .stats-card {
@@ -2123,6 +2204,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ asset('js/security.js') }}"></script>
     
     <!-- Custom JS -->
     <script>
@@ -2522,5 +2604,64 @@
             }
         })();
     </script>
+    
+    <script>
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Disable keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S
+            if (e.keyCode === 123 || 
+                (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+                (e.ctrlKey && e.keyCode === 85) ||
+                (e.ctrlKey && e.keyCode === 83)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Disable text selection
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Disable drag and drop
+        document.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Clear console periodically
+        setInterval(function() {
+            console.clear();
+        }, 1000);
+
+        // Detect DevTools
+        let devtools = {open: false, orientation: null};
+        const threshold = 160;
+        setInterval(function() {
+            if (window.outerHeight - window.innerHeight > threshold || 
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devtools.open) {
+                    devtools.open = true;
+                    window.location.href = '{{ route("student.dashboard") }}';
+                }
+            } else {
+                devtools.open = false;
+            }
+        }, 500);
+
+        // Disable print
+        window.addEventListener('beforeprint', function(e) {
+            e.preventDefault();
+            return false;
+        });
+    </script>
+
 </body>
 </html>

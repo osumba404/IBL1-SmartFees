@@ -5,9 +5,14 @@
 @section('content')
 <div class="container-fluid py-4">
     <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="page-title">Payment Plans</h2>
-            <p class="page-subtitle">Manage your flexible payment schedules</p>
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="page-title">Payment Plans</h2>
+                <p class="page-subtitle">Manage your flexible payment schedules</p>
+            </div>
+            <a href="{{ route('student.payment-plans.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Create Payment Plan
+            </a>
         </div>
     </div>
 
@@ -84,7 +89,10 @@
             <i class="bi bi-calendar-check fa-3x text-muted mb-3"></i>
             <h5 class="text-muted">No Payment Plans</h5>
             <p class="text-muted">You don't have any payment plans yet.</p>
-            <a href="{{ route('student.enrollments.index') }}" class="btn btn-primary">View Enrollments</a>
+            <a href="{{ route('student.payment-plans.create') }}" class="btn btn-primary me-2">
+                <i class="bi bi-plus-circle me-2"></i>Create Payment Plan
+            </a>
+            <a href="{{ route('student.enrollments.index') }}" class="btn btn-outline-primary">View Enrollments</a>
         </div>
     @endif
 </div>

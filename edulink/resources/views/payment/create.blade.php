@@ -31,20 +31,37 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             min-height: 100vh;
             margin: 0;
             padding: 20px;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="0.5" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            pointer-events: none;
+            z-index: 0;
         }
         
         .payment-container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: var(--shadow-lg);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.2);
             overflow: hidden;
-            animation: slideUp 0.6s ease-out;
+            animation: slideUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
         }
         
         @keyframes slideUp {
@@ -59,9 +76,9 @@
         }
         
         .payment-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 2rem;
+            padding: 3.5rem 2rem;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -74,8 +91,18 @@
             right: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: float 6s ease-in-out infinite;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .payment-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
         }
         
         @keyframes float {
@@ -99,11 +126,30 @@
         }
         
         .payment-body {
-            padding: 2rem;
+            padding: 3rem;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 3rem;
+        }
+        
+        .payment-form {
+            /* Left column for form */
+        }
+        
+        .payment-summary {
+            /* Right column for summary */
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 24px;
+            padding: 2.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
         .form-section {
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
         
         .form-section h3 {
@@ -139,21 +185,23 @@
         
         .payment-methods {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
         }
         
         .payment-method {
-            background: white;
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(226, 232, 240, 0.5);
+            border-radius: 24px;
+            padding: 2.5rem 1.5rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
         
         .payment-method::before {
@@ -172,15 +220,16 @@
         }
         
         .payment-method:hover {
-            border-color: var(--primary);
-            transform: translateY(-4px);
-            box-shadow: var(--shadow);
+            border-color: #667eea;
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(102, 126, 234, 0.25), 0 0 0 1px rgba(102, 126, 234, 0.1);
         }
         
         .payment-method.selected {
-            border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.1) 100%);
-            transform: translateY(-2px);
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 25px 50px -12px rgba(102, 126, 234, 0.4), 0 0 0 2px rgba(102, 126, 234, 0.2);
         }
         
         .payment-method .icon {
@@ -234,22 +283,38 @@
         }
         
         .btn-payment {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
-            border-radius: 12px;
-            padding: 1rem 2rem;
+            border-radius: 16px;
+            padding: 1.25rem 2rem;
             font-size: 1.1rem;
             font-weight: 600;
             color: white;
             width: 100%;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-payment::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s;
+        }
+        
+        .btn-payment:hover::before {
+            left: 100%;
         }
         
         .btn-payment:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
         }
         
         .btn-payment:disabled {
@@ -275,12 +340,24 @@
             text-decoration: none;
         }
         
-        .summary-card {
-            background: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 1.5rem;
+        .info-card {
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+            border-radius: 24px;
+            padding: 2.5rem;
             margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+            border-radius: 24px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
         .summary-row {
@@ -310,27 +387,88 @@
             }
             
             .payment-container {
-                border-radius: 16px;
+                border-radius: 20px;
             }
             
             .payment-header {
-                padding: 1.5rem;
+                padding: 2rem 1.5rem;
             }
             
             .payment-header h1 {
-                font-size: 1.5rem;
+                font-size: 1.75rem;
             }
             
             .payment-body {
-                padding: 1.5rem;
+                padding: 2rem 1.5rem;
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .payment-summary {
+                order: -1;
+                position: static;
+                padding: 2rem;
             }
             
             .payment-methods {
                 grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .payment-method {
+                padding: 1.5rem 1rem;
+                display: flex;
+                align-items: center;
+                text-align: left;
+                gap: 1rem;
+            }
+            
+            .payment-method .icon {
+                font-size: 2rem;
+                margin-bottom: 0;
+                flex-shrink: 0;
+            }
+            
+            .payment-method .content {
+                flex: 1;
+            }
+            
+            .summary-card {
+                padding: 1.5rem;
+            }
+            
+            .info-card {
+                padding: 1.5rem;
+            }
+            
+            .form-section h3 {
+                font-size: 1.1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .payment-header {
+                padding: 1.5rem 1rem;
+            }
+            
+            .payment-body {
+                padding: 1.5rem 1rem;
             }
             
             .payment-method {
                 padding: 1rem;
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+            
+            .payment-method .icon {
+                margin-bottom: 0.5rem;
+            }
+            
+            .btn-payment {
+                padding: 1rem;
+                font-size: 1rem;
             }
         }
         
@@ -356,6 +494,65 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        .support-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 2rem 0;
+            margin-top: 2rem;
+        }
+        
+        .support-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            text-align: center;
+        }
+        
+        .support-container h6 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+        
+        .support-container p {
+            color: #64748b;
+            margin-bottom: 1.5rem;
+        }
+        
+        .support-contacts {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            font-weight: 500;
+        }
+        
+        .contact-item i {
+            color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .support-section {
+                padding: 1.5rem 0;
+            }
+            
+            .support-container {
+                padding: 0 1rem;
+            }
+            
+            .support-contacts {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -366,107 +563,159 @@
         </div>
         
         <div class="payment-body">
-            <form action="{{ route('payment.process.post') }}" method="POST" id="paymentForm">
-                @csrf
-                @if($existingPayment)
-                    <input type="hidden" name="payment_id" value="{{ $existingPayment->id }}">
-                @endif
-                
-                <div class="form-section">
-                    <h3><i class="bi bi-person-circle"></i>Student Information</h3>
-                    <div class="summary-card">
-                        <div class="summary-row">
-                            <span class="summary-label">Student Name</span>
-                            <span class="summary-value">{{ $student->first_name }} {{ $student->last_name }}</span>
-                        </div>
-                        @if($enrollment)
-                        <div class="summary-row">
-                            <span class="summary-label">Course</span>
-                            <span class="summary-value">{{ $enrollment->course->name ?? 'N/A' }}</span>
-                        </div>
-                        @endif
-                        <div class="summary-row">
-                            <span class="summary-label">Student ID</span>
-                            <span class="summary-value">{{ $student->student_id }}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-section">
-                    <h3><i class="bi bi-currency-dollar"></i>Payment Amount</h3>
-                    <div class="input-group">
-                        <span class="input-group-text" style="background: #f1f5f9; border: 2px solid var(--border); border-right: none; border-radius: 12px 0 0 12px; font-weight: 600;">KSh</span>
-                        <input type="number" step="0.01" min="1" class="form-control" id="amount" name="amount" 
-                               value="{{ $paymentData['amount'] ?? $existingPayment->amount ?? 1000 }}" 
-                               {{ $existingPayment ? 'readonly' : '' }} required 
-                               style="border-left: none; border-radius: 0 12px 12px 0;">
-                    </div>
+            <div class="payment-form">
+                <form action="{{ route('payment.process.post') }}" method="POST" id="paymentForm">
+                    @csrf
+                    @if($enrollment)
+                        <input type="hidden" name="enrollment_id" id="enrollment_id" value="{{ $enrollment->id }}">
+                    @endif
                     @if($existingPayment)
-                        <small class="text-muted mt-2 d-block">Amount is fixed for this enrollment payment</small>
                         <input type="hidden" name="payment_id" value="{{ $existingPayment->id }}">
                     @endif
+                    
+                    <div class="form-section">
+                        <h3><i class="bi bi-currency-dollar"></i>Payment Amount</h3>
+                        <div class="input-group">
+                            <span class="input-group-text" style="background: #f1f5f9; border: 2px solid #e2e8f0; border-right: none; border-radius: 16px 0 0 16px; font-weight: 600; font-size: 1.1rem;">KSh</span>
+                            <input type="number" step="0.01" min="1" class="form-control" id="amount" name="amount" 
+                                   value="{{ $prefilledAmount ?? $paymentData['amount'] ?? $existingPayment->amount ?? 1000 }}" 
+                                   {{ $existingPayment ? 'readonly' : '' }} required 
+                                   style="border-left: none; border-radius: 0 16px 16px 0; font-size: 1.1rem; font-weight: 600;">
+                        </div>
+                        @if($existingPayment)
+                            <small class="text-muted mt-2 d-block">Amount is fixed for this enrollment payment</small>
+                            <input type="hidden" name="payment_id" value="{{ $existingPayment->id }}">
+                        @endif
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3><i class="bi bi-wallet2"></i>Select Payment Method</h3>
+                        <div class="payment-methods">
+                            <div class="payment-method" data-method="mpesa">
+                                <i class="bi bi-phone icon mpesa"></i>
+                                <div class="content">
+                                    <div class="name">M-Pesa</div>
+                                    <div class="desc">Mobile Money</div>
+                                </div>
+                            </div>
+                            <div class="payment-method" data-method="stripe">
+                                <i class="bi bi-credit-card icon card"></i>
+                                <div class="content">
+                                    <div class="name">Credit Card</div>
+                                    <div class="desc">Visa, Mastercard, Amex</div>
+                                </div>
+                            </div>
+                            <div class="payment-method" data-method="paypal">
+                                <i class="bi bi-paypal icon paypal"></i>
+                                <div class="content">
+                                    <div class="name">PayPal</div>
+                                    <div class="desc">Digital Wallet</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="payment_method" id="payment_method" 
+                               value="{{ $paymentData['payment_method'] ?? $existingPayment->payment_method ?? '' }}" required>
+                        
+                        <!-- M-Pesa Fields -->
+                        <div class="phone-input" id="mpesa-phone">
+                            <label for="phone" class="form-label"><i class="bi bi-phone me-2"></i>M-Pesa Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   value="{{ $student->phone ?? '' }}" placeholder="254700000000">
+                            <small class="text-muted mt-2 d-block">Phone number from your profile. You can edit if needed.</small>
+                        </div>
+                        
+                        <!-- Card Fields -->
+                        <div class="phone-input" id="card-fields">
+                            <label class="form-label"><i class="bi bi-credit-card me-2"></i>Card Details</label>
+                            <div id="stripe-card-element" class="form-control" style="padding: 12px;"></div>
+                            <small class="text-muted mt-2 d-block">Enter your card details securely</small>
+                        </div>
+                        
+                        <!-- PayPal Fields -->
+                        <div class="phone-input" id="paypal-fields">
+                            <label for="paypal_email" class="form-label"><i class="bi bi-envelope me-2"></i>PayPal Email</label>
+                            <input type="email" class="form-control" id="paypal_email" name="paypal_email" placeholder="your@email.com">
+                            <small class="text-muted mt-2 d-block">Enter your PayPal registered email address</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-3">
+                        <button type="submit" class="btn-payment" id="payButton" disabled>
+                            <span class="btn-text">Proceed to Payment</span>
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <span>Processing...</span>
+                            </div>
+                        </button>
+                        <div class="text-center">
+                            <a href="{{ route('student.dashboard') }}" class="btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="payment-summary">
+                <h4 class="mb-4"><i class="bi bi-receipt me-2"></i>Payment Summary</h4>
+                
+                <div class="summary-card">
+                    <div class="summary-row">
+                        <span class="summary-label"><i class="bi bi-person me-2"></i>Student Name</span>
+                        <span class="summary-value">{{ $student->first_name }} {{ $student->last_name }}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label"><i class="bi bi-hash me-2"></i>Student ID</span>
+                        <span class="summary-value">{{ $student->student_id }}</span>
+                    </div>
+                    @if($enrollment)
+                    <div class="summary-row">
+                        <span class="summary-label"><i class="bi bi-book me-2"></i>Course</span>
+                        <span class="summary-value" id="selected-course">{{ $enrollment->course->name ?? 'N/A' }}</span>
+                    </div>
+                    @endif
+                    <div class="summary-row" style="border-top: 2px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
+                        <span class="summary-label" style="font-size: 1.1rem; font-weight: 700;"><i class="bi bi-currency-dollar me-2"></i>Total Amount</span>
+                        <span class="summary-value" style="font-size: 1.5rem; font-weight: 700; color: #2563eb;" id="total-amount">KSh {{ number_format($prefilledAmount ?? $paymentData['amount'] ?? $existingPayment->amount ?? 1000, 2) }}</span>
+                    </div>
                 </div>
                 
-                <div class="form-section">
-                    <h3><i class="bi bi-wallet2"></i>Select Payment Method</h3>
-                    <div class="payment-methods">
-                        <div class="payment-method" data-method="mpesa">
-                            <i class="bi bi-phone icon mpesa"></i>
-                            <div class="name">M-Pesa</div>
-                            <div class="desc">Mobile Money</div>
-                        </div>
-                        <div class="payment-method" data-method="stripe">
-                            <i class="bi bi-credit-card icon card"></i>
-                            <div class="name">Credit Card</div>
-                            <div class="desc">Visa, Mastercard, Amex</div>
-                        </div>
-                        <div class="payment-method" data-method="paypal">
-                            <i class="bi bi-paypal icon paypal"></i>
-                            <div class="name">PayPal</div>
-                            <div class="desc">Digital Wallet</div>
-                        </div>
-                    </div>
-                    <input type="hidden" name="payment_method" id="payment_method" 
-                           value="{{ $paymentData['payment_method'] ?? $existingPayment->payment_method ?? '' }}" required>
-                    
-                    <!-- M-Pesa Fields -->
-                    <div class="phone-input" id="mpesa-phone">
-                        <label for="phone" class="form-label"><i class="bi bi-phone me-2"></i>M-Pesa Phone Number</label>
-                        <input type="tel" class="form-control" id="phone" name="phone" 
-                               value="{{ $student->phone ?? '' }}" placeholder="254700000000">
-                        <small class="text-muted mt-2 d-block">Phone number from your profile. You can edit if needed.</small>
-                    </div>
-                    
-                    <!-- Card Fields -->
-                    <div class="phone-input" id="card-fields">
-                        <label class="form-label"><i class="bi bi-credit-card me-2"></i>Card Details</label>
-                        <div id="stripe-card-element" class="form-control" style="padding: 12px;"></div>
-                        <small class="text-muted mt-2 d-block">Enter your card details securely</small>
-                    </div>
-                    
-                    <!-- PayPal Fields -->
-                    <div class="phone-input" id="paypal-fields">
-                        <label for="paypal_email" class="form-label"><i class="bi bi-envelope me-2"></i>PayPal Email</label>
-                        <input type="email" class="form-control" id="paypal_email" name="paypal_email" placeholder="your@email.com">
-                        <small class="text-muted mt-2 d-block">Enter your PayPal registered email address</small>
-                    </div>
+                @if(isset($enrollments) && $enrollments->count() > 1)
+                <div class="info-card">
+                    <h6 class="mb-3"><i class="bi bi-book me-2"></i>Select Course</h6>
+                    <select class="form-select" id="enrollment-selector" onchange="updateCourseSelection()">
+                        @foreach($enrollments as $enroll)
+                            <option value="{{ $enroll->id }}" 
+                                    data-course="{{ $enroll->course->name }}" 
+                                    data-fee="{{ $enroll->course->fee ?? 1000 }}"
+                                    {{ ($enrollment && $enrollment->id == $enroll->id) ? 'selected' : '' }}>
+                                {{ $enroll->course->name }} ({{ $enroll->course->course_code }})
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
+                @endif
                 
-                <div class="d-grid gap-3">
-                    <button type="submit" class="btn-payment" id="payButton" disabled>
-                        <span class="btn-text">Proceed to Payment</span>
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <span>Processing...</span>
-                        </div>
-                    </button>
-                    <div class="text-center">
-                        <a href="{{ route('student.dashboard') }}" class="btn-secondary">
-                            <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
-                        </a>
-                    </div>
+
+            </div>
+        </div>
+    </div>
+    
+    <!-- Support Section -->
+    <div class="support-section">
+        <div class="support-container">
+            <h6><i class="bi bi-headset me-2"></i>Need Help?</h6>
+            <p>Contact our support team if you need assistance with your payment.</p>
+            <div class="support-contacts">
+                <div class="contact-item">
+                    <i class="bi bi-envelope me-2"></i>
+                    <span>support@edulink.ac.ke</span>
                 </div>
-            </form>
+                <div class="contact-item">
+                    <i class="bi bi-telephone me-2"></i>
+                    <span>+254 700 000 000</span>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -612,16 +861,41 @@
                 }
             });
             
-            // Amount input formatting
+            // Amount input formatting and live update
             const amountInput = document.getElementById('amount');
+            const totalAmountDisplay = document.getElementById('total-amount');
+            
             amountInput.addEventListener('input', function() {
-                const value = parseFloat(this.value);
+                const value = parseFloat(this.value) || 0;
                 if (value > 0) {
-                    this.style.borderColor = 'var(--success)';
+                    this.style.borderColor = '#10b981';
+                    totalAmountDisplay.textContent = 'KSh ' + new Intl.NumberFormat().format(value.toFixed(2));
                 } else {
-                    this.style.borderColor = 'var(--danger)';
+                    this.style.borderColor = '#ef4444';
+                    totalAmountDisplay.textContent = 'KSh 0.00';
                 }
             });
+            
+            // Course selection update function
+            window.updateCourseSelection = function() {
+                const selector = document.getElementById('enrollment-selector');
+                const selectedOption = selector.options[selector.selectedIndex];
+                const enrollmentId = selectedOption.value;
+                const courseName = selectedOption.dataset.course;
+                const courseFee = selectedOption.dataset.fee;
+                
+                // Update hidden input
+                document.getElementById('enrollment_id').value = enrollmentId;
+                
+                // Update course name in summary
+                document.getElementById('selected-course').textContent = courseName;
+                
+                // Update amount if not readonly
+                if (!amountInput.readOnly) {
+                    amountInput.value = courseFee;
+                    totalAmountDisplay.textContent = 'KSh ' + new Intl.NumberFormat().format(parseFloat(courseFee).toFixed(2));
+                }
+            };
             
 
             
@@ -707,6 +981,46 @@
                 }
             };
         });
+    </script>
+    
+    <!-- Security Protection -->
+    <script>
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        
+        // Disable F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                (e.ctrlKey && e.key === 'u') ||
+                (e.ctrlKey && e.key === 's')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Disable text selection
+        document.onselectstart = () => false;
+        document.ondragstart = () => false;
+        
+        // Clear console
+        setInterval(() => console.clear(), 1000);
+        
+        // Detect DevTools
+        let devtools = {open: false, orientation: null};
+        const threshold = 160;
+        setInterval(() => {
+            if (window.outerHeight - window.innerHeight > threshold || 
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devtools.open) {
+                    devtools.open = true;
+                    alert('Developer tools detected. Redirecting for security.');
+                    window.location.href = '/student/dashboard';
+                }
+            } else {
+                devtools.open = false;
+            }
+        }, 500);
     </script>
 </body>
 </html>
