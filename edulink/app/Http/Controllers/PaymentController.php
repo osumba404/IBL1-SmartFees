@@ -41,24 +41,17 @@ class PaymentController extends Controller
     
     public function process(Request $request)
     {
-        try {
-            // Check if there's an existing payment record to update
-            $existingPayment = null;
-            if ($request->payment_id) {
-                $existingPayment = Payment::find($request->payment_id);
-            }
-            
-            if ($request->payment_method === 'mpesa') {
-                return $this->processMpesa($request, $existingPayment);
-            } elseif ($request->payment_method === 'paypal') {
-                return $this->processPaypal($request, $existingPayment);
-            } elseif ($request->payment_method === 'stripe') {
-                return $this->processStripe($request, $existingPayment);
-            }
-            
-            return response()->json(['success' => false, 'message' => 'Payment method not supported']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Payment processing failed']);
+        $paymentMethod = $request->payment_method;
+        
+        switch ($paymentMethod) {
+            case 'mpesa':
+                return app(MpesaPaymentController::class)->process($request);
+            case 'stripe':
+                return app(StripePaymentController::class)->process($request);
+            case 'paypal':
+                return app(PaypalPaymentController::class)->process($request);
+            default:
+                return response()->json(['success' => false, 'message' => 'Payment method not supported']);
         }
     }
     
