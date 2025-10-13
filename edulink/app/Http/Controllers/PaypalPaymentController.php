@@ -18,19 +18,28 @@ class PaypalPaymentController extends Controller
         $enrollment = StudentEnrollment::findOrFail($request->enrollment_id);
         
         if ($enrollment->student_id !== auth()->id()) {
-            return redirect()->back()->with('error', 'Unauthorized access to enrollment.');
+            return response()->json(['success' => false, 'message' => 'Unauthorized access']);
         }
 
         $payment = Payment::create([
             'student_id' => auth()->id(),
-            'enrollment_id' => $request->enrollment_id,
+            'student_enrollment_id' => $request->enrollment_id,
             'amount' => $request->amount,
             'payment_method' => 'paypal',
             'status' => 'completed',
-            'transaction_id' => 'PAYPAL_' . time() . '_' . auth()->id()
+            'transaction_id' => 'PP_' . time(),
+            'gateway_transaction_id' => 'PPX' . time(),
+            'payment_reference' => Payment::generatePaymentReference(),
+            'currency' => 'USD',
+            'payment_type' => 'tuition',
+            'payment_date' => now()
         ]);
 
         $enrollment->updatePaymentStatus($request->amount);
-        return redirect()->route('payment.success', $payment->id);
+        return response()->json([
+            'success' => true,
+            'payment_id' => $payment->id,
+            'redirect_url' => route('payment.success', $payment->id)
+        ]);
     }
 }
