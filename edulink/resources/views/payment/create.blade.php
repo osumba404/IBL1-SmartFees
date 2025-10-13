@@ -598,20 +598,6 @@
                                     <div class="desc">Mobile Money</div>
                                 </div>
                             </div>
-                            <div class="payment-method" data-method="stripe">
-                                <i class="bi bi-credit-card icon card"></i>
-                                <div class="content">
-                                    <div class="name">Credit Card</div>
-                                    <div class="desc">Visa, Mastercard, Amex</div>
-                                </div>
-                            </div>
-                            <div class="payment-method" data-method="paypal">
-                                <i class="bi bi-paypal icon paypal"></i>
-                                <div class="content">
-                                    <div class="name">PayPal</div>
-                                    <div class="desc">Digital Wallet</div>
-                                </div>
-                            </div>
                         </div>
                         <input type="hidden" name="payment_method" id="payment_method" 
                                value="{{ $paymentData['payment_method'] ?? $existingPayment->payment_method ?? '' }}" required>
@@ -624,19 +610,7 @@
                             <small class="text-muted mt-2 d-block">Phone number from your profile. You can edit if needed.</small>
                         </div>
                         
-                        <!-- Card Fields -->
-                        <div class="phone-input" id="card-fields">
-                            <label class="form-label"><i class="bi bi-credit-card me-2"></i>Card Details</label>
-                            <div id="stripe-card-element" class="form-control" style="padding: 12px;"></div>
-                            <small class="text-muted mt-2 d-block">Enter your card details securely</small>
-                        </div>
-                        
-                        <!-- PayPal Fields -->
-                        <div class="phone-input" id="paypal-fields">
-                            <label for="paypal_email" class="form-label"><i class="bi bi-envelope me-2"></i>PayPal Email</label>
-                            <input type="email" class="form-control" id="paypal_email" name="paypal_email" placeholder="your@email.com">
-                            <small class="text-muted mt-2 d-block">Enter your PayPal registered email address</small>
-                        </div>
+
                     </div>
                     
                     <div class="d-grid gap-3">
@@ -720,7 +694,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://js.stripe.com/v3/"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const paymentMethods = document.querySelectorAll('.payment-method');
@@ -751,20 +724,11 @@
                     const methodType = this.dataset.method;
                     paymentMethodInput.value = methodType;
                     
-                    // Show/hide payment method fields
-                    const cardFields = document.getElementById('card-fields');
-                    const paypalFields = document.getElementById('paypal-fields');
-                    
-                    // Hide all fields first
+                    // Show M-Pesa phone field
                     mpesaPhoneField.classList.remove('show');
-                    cardFields.classList.remove('show');
-                    paypalFields.classList.remove('show');
-                    
-                    // Reset required fields
                     phoneInput.required = false;
-                    document.getElementById('paypal_email').required = false;
                     
-                    // Show relevant fields
+                    // Show M-Pesa fields
                     if (methodType === 'mpesa') {
                         mpesaPhoneField.classList.add('show');
                         phoneInput.required = true;
@@ -772,25 +736,15 @@
                         if (!phoneInput.value && '{{ $student->phone }}') {
                             phoneInput.value = '{{ $student->phone }}';
                         }
-                    } else if (methodType === 'stripe') {
-                        cardFields.classList.add('show');
-                        initializeStripeElements();
-                    } else if (methodType === 'paypal') {
-                        paypalFields.classList.add('show');
-                        document.getElementById('paypal_email').required = true;
                     }
                     
                     // Enable pay button
                     payButton.disabled = false;
                     
-                    // Update button text based on method
+                    // Update button text
                     const btnText = payButton.querySelector('.btn-text');
                     if (methodType === 'mpesa') {
                         btnText.textContent = 'Pay with M-Pesa';
-                    } else if (methodType === 'stripe') {
-                        btnText.textContent = 'Pay with Card';
-                    } else if (methodType === 'paypal') {
-                        btnText.textContent = 'Pay with PayPal';
                     }
                 });
             });
@@ -807,11 +761,8 @@
                 loading.classList.add('show');
                 payButton.disabled = true;
                 
-                // Handle different payment methods
-                if (formData.get('payment_method') === 'stripe') {
-                    this.handleStripePayment(formData);
-                    return;
-                } else if (formData.get('payment_method') === 'mpesa' || formData.get('payment_method') === 'paypal') {
+                // Handle M-Pesa payment
+                if (formData.get('payment_method') === 'mpesa') {
                     console.log('Processing payment:', formData.get('payment_method'));
                     console.log('Form action:', this.action);
                     
@@ -908,78 +859,7 @@
                 e.target.value = value;
             });
             
-            // Initialize Stripe
-            const stripe = Stripe('{{ config('services.stripe.key') }}');
-            let elements, cardElement;
-            
-            // Handle Stripe payment method selection
-            function initializeStripeElements() {
-                if (elements) return;
-                
-                elements = stripe.elements();
-                cardElement = elements.create('card', {
-                    style: {
-                        base: {
-                            fontSize: '16px',
-                            color: '#424770',
-                            '::placeholder': {
-                                color: '#aab7c4',
-                            },
-                        },
-                    },
-                });
-                
-                // Mount card element when stripe is selected
-                setTimeout(() => {
-                    const cardContainer = document.getElementById('stripe-card-element');
-                    if (cardContainer) {
-                        cardElement.mount('#stripe-card-element');
-                    }
-                }, 100);
-            }
-            
-            // Handle Stripe payment
-            paymentForm.handleStripePayment = async function(formData) {
-                try {
-                    // Create payment intent
-                    const response = await fetch(this.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Accept': 'application/json'
-                        }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        // Confirm payment with Stripe
-                        const {error} = await stripe.confirmCardPayment(data.client_secret, {
-                            payment_method: {
-                                card: cardElement,
-                            }
-                        });
-                        
-                        if (error) {
-                            alert('Payment failed: ' + error.message);
-                        } else {
-                            window.location.href = '{{ route('payment.success') }}';
-                        }
-                    } else {
-                        alert(data.message || 'Payment failed');
-                    }
-                } catch (error) {
-                    console.error('Stripe payment error:', error);
-                    alert('Payment failed. Please try again.');
-                } finally {
-                    const btnText = payButton.querySelector('.btn-text');
-                    const loading = payButton.querySelector('.loading');
-                    btnText.style.display = 'inline';
-                    loading.classList.remove('show');
-                    payButton.disabled = false;
-                }
-            };
+
         });
     </script>
     
