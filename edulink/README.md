@@ -927,8 +927,8 @@ For support and questions:
 ## 🙏 Acknowledgments
 
 ### Development Team
-- **Collins Oieno** - Lead Developer
-- **Evand Osumba** - Developer
+- **Evans Osumba** - Developer
+- **Collins Otieno** - Lead Developer
 
 ### Technologies & Services
 - Laravel Framework and community

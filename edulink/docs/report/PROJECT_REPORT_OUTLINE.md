@@ -2,7 +2,7 @@
 
 ## Cover & Title Page
 - Project Title: Edulink SmartFees - Student Fee Management System
-- Team Members: [To be filled]
+- Team Members: Evans Osumba, Collins Otieno
 - Roll Numbers: [To be filled]
 - Guide Name: [To be filled]
 - Academic Year: 2024/2025
@@ -220,7 +220,8 @@
 - Best practices discovered
 
 ### 8.3 Individual Contribution Table/Pie Chart
-- Team member contributions
+- **Evans Osumba:** Backend development, Payment integration, Testing
+- **Collins Otieno:** Frontend development, UI/UX design, Documentation
 - Percentage breakdown
 - Responsibilities
 

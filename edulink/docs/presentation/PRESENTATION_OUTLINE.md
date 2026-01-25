@@ -4,7 +4,7 @@
 
 ### Slide 1: Title Slide
 - **Project Title:** Edulink SmartFees - Student Fee Management System
-- **Team Members:** [Names]
+- **Team Members:** Evans Osumba, Collins Otieno
 - **Institution:** The Technical University of Kenya
 - **Date:** [Presentation Date]
 
@@ -154,11 +154,11 @@
 - Integration with accounting software
 
 ### Slide 17: Individual Contributions
-- **Team Member 1:** [Name]
+- **Evans Osumba:**
   - Backend development
   - Payment integration
   - Testing
-- **Team Member 2:** [Name]
+- **Collins Otieno:**
   - Frontend development
   - UI/UX design
   - Documentation
