@@ -1,0 +1,52 @@
+@startuml Activity Diagram - Payment Processing
+
+start
+
+:Student initiates payment;
+
+:Select payment method;
+
+if (Payment method?) then (M-Pesa)
+  :Enter phone number;
+  :Initiate STK Push;
+  :Wait for user confirmation;
+  if (User confirms?) then (Yes)
+    :Process payment;
+    :Update payment status;
+  else (No)
+    :Mark payment as cancelled;
+    stop
+  endif
+elseif (Stripe) then
+  :Enter card details;
+  :Create payment intent;
+  :Process payment;
+  if (Payment successful?) then (Success)
+    :Update payment status;
+  else (Failed)
+    :Mark payment as failed;
+    stop
+  endif
+elseif (Bank Transfer) then
+  :Enter bank details;
+  :Record payment;
+  :Mark as pending verification;
+else (Cash)
+  :Enter receipt number;
+  :Record payment;
+  :Mark as pending verification;
+endif
+
+:Update enrollment balance;
+
+:Generate receipt;
+
+:Send confirmation email;
+
+:Send SMS notification;
+
+:Log payment transaction;
+
+stop
+
+@enduml

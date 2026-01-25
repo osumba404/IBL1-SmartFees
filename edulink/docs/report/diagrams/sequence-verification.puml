@@ -1,0 +1,54 @@
+@startuml Sequence Diagram - Admin Payment Verification Flow
+
+actor Admin
+participant "AdminController" as Controller
+participant "PaymentService" as Service
+participant "Payment Model" as Payment
+participant "StudentEnrollment" as Enrollment
+participant "AuditLogService" as Audit
+participant "NotificationService" as Notification
+participant Student
+
+Admin -> Controller: View Payment Details
+activate Controller
+Controller -> Payment: loadPayment()
+Payment --> Controller: Payment Data
+Controller --> Admin: Display Payment
+deactivate Controller
+
+Admin -> Controller: Verify Payment
+activate Controller
+Controller -> Controller: Check Permissions
+Controller -> Service: verifyPayment(paymentId, data)
+activate Service
+
+Service -> Payment: findPayment()
+Service -> Payment: check if already verified
+Payment --> Service: Payment Status
+
+Service -> Payment: update(is_verified: true)
+Service -> Payment: update(status: completed)
+Service -> Audit: logPaymentVerification()
+activate Audit
+Audit --> Audit: Log to audit.log
+deactivate Audit
+
+Service -> Enrollment: updatePaymentStatus(amount)
+activate Enrollment
+Enrollment -> Enrollment: Calculate new balance
+Enrollment -> Enrollment: Update fees_paid
+deactivate Enrollment
+
+Service -> Notification: sendPaymentConfirmation()
+activate Notification
+Notification -> Student: Email Notification
+Notification -> Student: SMS Notification
+deactivate Notification
+
+Service --> Controller: Verification Success
+deactivate Service
+
+Controller --> Admin: Success Message
+deactivate Controller
+
+@enduml

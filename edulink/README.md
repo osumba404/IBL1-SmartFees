@@ -4,6 +4,20 @@
     <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo">
 </p>
 
+<p align="center">
+    <img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel Version">
+    <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP Version">
+    <img src="https://img.shields.io/badge/MySQL-8.0+-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL Version">
+    <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License">
+</p>
+
+<p align="center">
+    <img src="https://img.shields.io/github/workflow/status/osumba404/IBL1-SmartFees/Tests?style=flat-square" alt="Build Status">
+    <img src="https://img.shields.io/codecov/c/github/osumba404/IBL1-SmartFees?style=flat-square" alt="Code Coverage">
+    <img src="https://img.shields.io/github/issues/osumba404/IBL1-SmartFees?style=flat-square" alt="Issues">
+    <img src="https://img.shields.io/github/contributors/osumba404/IBL1-SmartFees?style=flat-square" alt="Contributors">
+</p>
+
 ## 📋 Table of Contents
 
 - [About](#about)
@@ -160,6 +174,40 @@ edulink/
 └── vendor/                       # Composer dependencies
 ```
 
+## 🐳 Docker Quick Start
+
+### Using Docker Compose
+
+```bash
+# Clone repository
+git clone https://github.com/osumba404/IBL1-SmartFees.git
+cd IBL1-SmartFees/edulink
+
+# Copy environment file
+cp .env.example .env
+
+# Start containers
+docker-compose up -d
+
+# Install dependencies
+docker-compose exec app composer install
+docker-compose exec app npm install
+
+# Generate key and run migrations
+docker-compose exec app php artisan key:generate
+docker-compose exec app php artisan migrate
+docker-compose exec app php artisan db:seed
+
+# Build assets
+docker-compose exec app npm run build
+```
+
+Access the application at:
+- **Application**: http://localhost:8000
+- **phpMyAdmin**: http://localhost:8080
+
+For detailed Docker setup, see [Docker Documentation](docs/DEPLOYMENT.md#docker-deployment).
+
 ## 🚀 Installation & Setup
 
 ### Prerequisites
@@ -229,6 +277,19 @@ composer run dev
 - **Student Portal**: http://localhost:8000/student/login
 - **Admin Portal**: http://localhost:8000/admin/login
 - **Payment System**: http://localhost:8000/payment (for logged-in students)
+
+### Live Deployment
+
+**Production URL**: [Deploy to your preferred platform]
+
+> **Note**: For production deployment, see [Deployment Guide](docs/DEPLOYMENT.md)
+
+**Deployment Platforms Supported:**
+- Docker (Recommended)
+- Render.com
+- Fly.io
+- Heroku
+- Traditional VPS/Server
 
 ### Step 8: Test Payment System
 ```bash
@@ -472,6 +533,22 @@ php artisan test --coverage
 - **Feature Tests**: End-to-end functionality testing
 - **Unit Tests**: Individual component testing
 - **Database Tests**: Model and migration testing
+
+## 🌐 Live Deployment
+
+**Status:** Ready for deployment
+
+The application is configured for deployment on various platforms:
+- **Render.com** (Recommended)
+- **Fly.io**
+- **Heroku**
+- **Traditional VPS** (Nginx/Apache)
+
+For detailed deployment instructions, see [Deployment Guide](docs/DEPLOYMENT.md).
+
+**Deployment URL:** [To be added after deployment]
+
+**QR Code:** [To be generated after deployment]
 
 ## 🚀 Deployment
 
@@ -850,8 +927,8 @@ For support and questions:
 ## 🙏 Acknowledgments
 
 ### Development Team
-- **Collins Oieno** - Lead Developer
-- **Evand Osumba** - Developer
+- **Evans Osumba** - Developer
+- **Collins Otieno** - Lead Developer
 
 ### Technologies & Services
 - Laravel Framework and community

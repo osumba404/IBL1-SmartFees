@@ -1,0 +1,140 @@
+@startuml Class Diagram - Edulink SmartFees
+
+package "Models" {
+    class Student {
+        -id: int
+        -student_id: string
+        -email: string
+        -password: string
+        -first_name: string
+        -last_name: string
+        -status: enum
+        +getFullNameAttribute(): string
+        +getOutstandingBalanceAttribute(): float
+        +hasOverduePayments(): bool
+    }
+    
+    class Admin {
+        -id: int
+        -name: string
+        -email: string
+        -password: string
+        -role: enum
+        -permissions: json
+        +canManageStudents(): bool
+        +canManagePayments(): bool
+        +isSuperAdmin(): bool
+    }
+    
+    class Payment {
+        -id: int
+        -student_id: int
+        -amount: decimal
+        -payment_method: string
+        -status: enum
+        -is_verified: bool
+        +generatePaymentReference(): string
+        +markAsCompleted(): void
+        +markAsFailed(): void
+    }
+    
+    class Course {
+        -id: int
+        -course_code: string
+        -name: string
+        -total_fee: decimal
+        -status: enum
+        +getFullTitleAttribute(): string
+        +isAvailable(): bool
+        +hasCapacity(): bool
+    }
+    
+    class StudentEnrollment {
+        -id: int
+        -student_id: int
+        -course_id: int
+        -semester_id: int
+        -enrollment_status: enum
+        -total_fees_due: decimal
+        -fees_paid: decimal
+        +updatePaymentStatus(): void
+    }
+    
+    class FeeStructure {
+        -id: int
+        -course_id: int
+        -semester_id: int
+        -tuition_fee: decimal
+        -total_fee: decimal
+    }
+}
+
+package "Services" {
+    class PaymentService {
+        -mpesaService: MpesaService
+        -stripeService: StripeService
+        +processPayment(): array
+        +verifyPayment(): array
+        +refundPayment(): array
+        +getAvailablePaymentMethods(): array
+    }
+    
+    class MpesaService {
+        +initiateSTKPush(): array
+        +verifyCallback(): bool
+    }
+    
+    class StripeService {
+        +createPaymentIntent(): array
+        +handleWebhook(): bool
+    }
+    
+    class NotificationService {
+        +sendPaymentConfirmation(): void
+        +sendPaymentReminder(): void
+        +sendSMS(): void
+    }
+    
+    class AuditLogService {
+        +logAdminAction(): void
+        +logPaymentVerification(): void
+        +logSecurityEvent(): void
+    }
+}
+
+package "Controllers" {
+    class StudentController {
+        +dashboard(): View
+        +profile(): View
+        +enrollments(): View
+        +payments(): View
+    }
+    
+    class AdminController {
+        +dashboard(): View
+        +students(): View
+        +payments(): View
+    }
+    
+    class PaymentController {
+        -paymentService: PaymentService
+        +initiate(): Response
+        +verify(): Response
+        +refund(): Response
+    }
+}
+
+' Relationships
+Student "1" --> "*" StudentEnrollment
+Student "1" --> "*" Payment
+Course "1" --> "*" StudentEnrollment
+Course "1" --> "*" FeeStructure
+StudentEnrollment "1" --> "*" Payment
+PaymentService --> MpesaService
+PaymentService --> StripeService
+PaymentController --> PaymentService
+PaymentController --> Payment
+StudentController --> Student
+AdminController --> Admin
+
+@enduml

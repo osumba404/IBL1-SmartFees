@@ -1,0 +1,360 @@
+@startuml ER Diagram - Edulink SmartFees Database
+
+entity "students" {
+  * id : INT <<PK>>
+  --
+  * student_id : VARCHAR(50) <<UNIQUE>>
+  * email : VARCHAR(255) <<UNIQUE>>
+  * password : VARCHAR(255)
+  * email_verified_at : TIMESTAMP
+  * first_name : VARCHAR(100)
+  * last_name : VARCHAR(100)
+  * middle_name : VARCHAR(100)
+  * phone : VARCHAR(20)
+  * date_of_birth : DATE
+  * gender : ENUM
+  * national_id : VARCHAR(50)
+  * passport_number : VARCHAR(50)
+  * address : TEXT
+  * city : VARCHAR(100)
+  * country : VARCHAR(100)
+  * postal_code : VARCHAR(20)
+  * emergency_contact_name : VARCHAR(255)
+  * emergency_contact_phone : VARCHAR(20)
+  * emergency_contact_relationship : VARCHAR(50)
+  * status : ENUM
+  * enrollment_date : DATE
+  * expected_graduation_date : DATE
+  * total_fees_owed : DECIMAL(12,2)
+  * total_fees_paid : DECIMAL(12,2)
+  * has_outstanding_fees : BOOLEAN
+  * last_payment_date : DATE
+  * profile_picture : VARCHAR(255)
+  * last_login_at : TIMESTAMP
+  * remember_token : VARCHAR(100)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "admins" {
+  * id : INT <<PK>>
+  --
+  * name : VARCHAR(255)
+  * email : VARCHAR(255) <<UNIQUE>>
+  * password : VARCHAR(255)
+  * email_verified_at : TIMESTAMP
+  * phone : VARCHAR(20)
+  * employee_id : VARCHAR(50) <<UNIQUE>>
+  * role : ENUM
+  * is_active : BOOLEAN
+  * department : VARCHAR(100)
+  * position : VARCHAR(100)
+  * hire_date : DATE
+  * can_manage_students : BOOLEAN
+  * can_manage_courses : BOOLEAN
+  * can_manage_payments : BOOLEAN
+  * can_view_reports : BOOLEAN
+  * can_approve_students : BOOLEAN
+  * can_manage_fees : BOOLEAN
+  * last_login_at : TIMESTAMP
+  * last_login_ip : VARCHAR(45)
+  * failed_login_attempts : INT
+  * locked_until : TIMESTAMP
+  * force_password_change : BOOLEAN
+  * remember_token : VARCHAR(100)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "courses" {
+  * id : INT <<PK>>
+  --
+  * course_code : VARCHAR(50) <<UNIQUE>>
+  * name : VARCHAR(255)
+  * description : TEXT
+  * level : ENUM
+  * type : ENUM
+  * duration_months : INT
+  * credit_hours : INT
+  * department : VARCHAR(100)
+  * faculty : VARCHAR(100)
+  * total_fee : DECIMAL(12,2)
+  * registration_fee : DECIMAL(10,2)
+  * examination_fee : DECIMAL(10,2)
+  * library_fee : DECIMAL(10,2)
+  * lab_fee : DECIMAL(10,2)
+  * allows_installments : BOOLEAN
+  * max_installments : INT
+  * minimum_deposit_percentage : DECIMAL(5,2)
+  * status : ENUM
+  * available_from : DATE
+  * available_until : DATE
+  * max_students : INT
+  * current_enrollment : INT
+  * prerequisites : JSON
+  * admission_requirements : TEXT
+  * is_active : BOOLEAN
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "semesters" {
+  * id : INT <<PK>>
+  --
+  * semester_code : VARCHAR(50) <<UNIQUE>>
+  * name : VARCHAR(255)
+  * description : TEXT
+  * academic_year : INT
+  * period : ENUM
+  * start_date : DATE
+  * end_date : DATE
+  * registration_start_date : DATE
+  * registration_end_date : DATE
+  * fee_payment_deadline : DATE
+  * late_payment_deadline : DATE
+  * late_payment_penalty_percentage : DECIMAL(5,2)
+  * late_payment_penalty_fixed : DECIMAL(10,2)
+  * grace_period_days : INT
+  * allows_grace_period : BOOLEAN
+  * grace_period_conditions : TEXT
+  * status : ENUM
+  * is_current_semester : BOOLEAN
+  * base_tuition_fee : DECIMAL(12,2)
+  * activity_fee : DECIMAL(10,2)
+  * technology_fee : DECIMAL(10,2)
+  * student_services_fee : DECIMAL(10,2)
+  * max_credits_per_student : INT
+  * min_credits_per_student : INT
+  * allows_late_enrollment : BOOLEAN
+  * late_enrollment_deadline : DATE
+  * is_active : BOOLEAN
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "student_enrollments" {
+  * id : INT <<PK>>
+  --
+  * student_id : INT <<FK>>
+  * course_id : INT <<FK>>
+  * semester_id : INT <<FK>>
+  * enrollment_number : VARCHAR(50) <<UNIQUE>>
+  * enrollment_date : DATE
+  * enrollment_type : ENUM
+  * status : ENUM
+  * status_change_date : DATE
+  * status_change_reason : TEXT
+  * total_fees_due : DECIMAL(12,2)
+  * fees_paid : DECIMAL(12,2)
+  * outstanding_balance : DECIMAL(12,2)
+  * fees_fully_paid : BOOLEAN
+  * payment_plan : ENUM
+  * installment_count : INT
+  * installment_amount : DECIMAL(10,2)
+  * next_payment_due : DATE
+  * gpa : DECIMAL(3,2)
+  * credits_enrolled : INT
+  * credits_completed : INT
+  * is_deferred : BOOLEAN
+  * deferment_start_date : DATE
+  * deferment_end_date : DATE
+  * deferment_reason : TEXT
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "fee_structures" {
+  * id : INT <<PK>>
+  --
+  * course_id : INT <<FK>>
+  * semester_id : INT <<FK>>
+  * fee_structure_code : VARCHAR(100) <<UNIQUE>>
+  * name : VARCHAR(255)
+  * description : TEXT
+  * tuition_fee : DECIMAL(12,2)
+  * lab_fee : DECIMAL(10,2)
+  * library_fee : DECIMAL(10,2)
+  * examination_fee : DECIMAL(10,2)
+  * registration_fee : DECIMAL(10,2)
+  * activity_fee : DECIMAL(10,2)
+  * technology_fee : DECIMAL(10,2)
+  * student_services_fee : DECIMAL(10,2)
+  * graduation_fee : DECIMAL(10,2)
+  * id_card_fee : DECIMAL(10,2)
+  * medical_insurance_fee : DECIMAL(10,2)
+  * accident_insurance_fee : DECIMAL(10,2)
+  * accommodation_fee : DECIMAL(10,2)
+  * meal_plan_fee : DECIMAL(10,2)
+  * subtotal : DECIMAL(12,2)
+  * discount_amount : DECIMAL(10,2)
+  * total_amount : DECIMAL(12,2)
+  * allows_installments : BOOLEAN
+  * max_installments : INT
+  * minimum_deposit_percentage : DECIMAL(5,2)
+  * minimum_deposit_amount : DECIMAL(10,2)
+  * late_payment_penalty_rate : DECIMAL(5,2)
+  * late_payment_fixed_penalty : DECIMAL(10,2)
+  * grace_period_days : INT
+  * effective_from : DATE
+  * effective_until : DATE
+  * status : ENUM
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "payments" {
+  * id : INT <<PK>>
+  --
+  * student_id : INT <<FK>>
+  * student_enrollment_id : INT <<FK>>
+  * payment_reference : VARCHAR(100) <<UNIQUE>>
+  * transaction_id : VARCHAR(100) <<UNIQUE>>
+  * receipt_number : VARCHAR(100)
+  * amount : DECIMAL(12,2)
+  * currency : VARCHAR(3)
+  * payment_method : ENUM
+  * payment_type : ENUM
+  * gateway_transaction_id : VARCHAR(255)
+  * gateway_reference : VARCHAR(255)
+  * gateway_response : JSON
+  * mpesa_receipt_number : VARCHAR(100)
+  * mpesa_transaction_date : VARCHAR(50)
+  * mpesa_phone_number : VARCHAR(20)
+  * mpesa_transaction_cost : DECIMAL(8,2)
+  * stripe_payment_intent_id : VARCHAR(255)
+  * stripe_charge_id : VARCHAR(255)
+  * stripe_customer_id : VARCHAR(255)
+  * stripe_metadata : JSON
+  * bank_name : VARCHAR(100)
+  * bank_reference : VARCHAR(100)
+  * bank_transaction_date : DATE
+  * status : ENUM
+  * is_verified : BOOLEAN
+  * verified_at : TIMESTAMP
+  * verified_by : INT <<FK>>
+  * payment_date : TIMESTAMP
+  * processed_at : TIMESTAMP
+  * value_date : DATE
+  * fee_breakdown : JSON
+  * outstanding_balance_before : DECIMAL(12,2)
+  * outstanding_balance_after : DECIMAL(12,2)
+  * is_refunded : BOOLEAN
+  * refund_amount : DECIMAL(12,2)
+  * refunded_at : TIMESTAMP
+  * refund_reason : TEXT
+  * refund_reference : VARCHAR(100)
+  * is_late_payment : BOOLEAN
+  * late_payment_penalty : DECIMAL(10,2)
+  * days_late : INT
+  * payment_notes : TEXT
+  * admin_notes : TEXT
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "payment_notifications" {
+  * id : INT <<PK>>
+  --
+  * student_id : INT <<FK>>
+  * payment_id : INT <<FK>>
+  * notification_type : VARCHAR(50)
+  * title : VARCHAR(255)
+  * message : TEXT
+  * priority : ENUM
+  * send_email : BOOLEAN
+  * send_sms : BOOLEAN
+  * send_push : BOOLEAN
+  * show_in_app : BOOLEAN
+  * status : ENUM
+  * sent_at : TIMESTAMP
+  * delivered_at : TIMESTAMP
+  * read_at : TIMESTAMP
+  * email_sent : BOOLEAN
+  * email_sent_at : TIMESTAMP
+  * email_error : TEXT
+  * sms_sent : BOOLEAN
+  * sms_sent_at : TIMESTAMP
+  * sms_error : TEXT
+  * push_sent : BOOLEAN
+  * push_sent_at : TIMESTAMP
+  * push_error : TEXT
+  * retry_count : INT
+  * max_retries : INT
+  * next_retry_at : TIMESTAMP
+  * notification_data : JSON
+  * template_name : VARCHAR(255)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "payment_plans" {
+  * id : INT <<PK>>
+  --
+  * student_id : INT <<FK>>
+  * student_enrollment_id : INT <<FK>>
+  * plan_name : VARCHAR(255)
+  * total_amount : DECIMAL(12,2)
+  * total_installments : INT
+  * status : ENUM
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "payment_installments" {
+  * id : INT <<PK>>
+  --
+  * payment_plan_id : INT <<FK>>
+  * installment_number : INT
+  * amount : DECIMAL(12,2)
+  * due_date : DATE
+  * status : ENUM
+  * paid_at : DATETIME
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "password_resets" {
+  * email : VARCHAR(255) <<PK>>
+  --
+  * token : VARCHAR(255)
+  * created_at : TIMESTAMP
+}
+
+' Relationships
+students ||--o{ student_enrollments : "has"
+courses ||--o{ student_enrollments : "has"
+semesters ||--o{ student_enrollments : "has"
+courses ||--o{ fee_structures : "has"
+semesters ||--o{ fee_structures : "has"
+students ||--o{ payments : "makes"
+student_enrollments ||--o{ payments : "for"
+students ||--o{ payment_notifications : "receives"
+payments ||--o{ payment_notifications : "triggers"
+students ||--o{ payment_plans : "creates"
+student_enrollments ||--o{ payment_plans : "for"
+payment_plans ||--o{ payment_installments : "contains"
+students ||--o{ password_resets : "resets"
+
+note right of students
+  Additional fields:
+  - profile_picture
+  - last_login_at
+  - remember_token
+end note
+
+note right of payments
+  Payment gateway fields:
+  - M-Pesa: receipt_number, phone, transaction_cost
+  - Stripe: payment_intent_id, charge_id, customer_id
+  - Bank: bank_name, bank_reference
+end note
+
+note right of fee_structures
+  Comprehensive fee breakdown:
+  - Tuition, lab, library, examination
+  - Activity, technology, services
+  - Insurance, accommodation, meals
+  - Late payment penalties
+end note
+
+@enduml

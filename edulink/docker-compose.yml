@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: edulink_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - edulink-network
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=local
+      - DB_HOST=db
+      - DB_DATABASE=edulink_smartfees
+      - DB_USERNAME=edulink_user
+      - DB_PASSWORD=edulink_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  nginx:
+    image: nginx:alpine
+    container_name: edulink_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - edulink-network
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: edulink_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: edulink_smartfees
+      MYSQL_USER: edulink_user
+      MYSQL_PASSWORD: edulink_password
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    ports:
+      - "3306:3306"
+    networks:
+      - edulink-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: edulink_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - edulink-network
+    command: redis-server --appendonly yes
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: edulink_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: root_password
+    ports:
+      - "8080:80"
+    networks:
+      - edulink-network
+    depends_on:
+      - db
+
+networks:
+  edulink-network:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local
+  redis_data:
+    driver: local
