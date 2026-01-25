@@ -1,0 +1,62 @@
+@startuml Sequence Diagram - Student Payment Flow
+
+actor Student
+participant "StudentController" as Controller
+participant "PaymentService" as Service
+participant "MpesaService" as Mpesa
+participant "Payment Model" as Payment
+participant "M-Pesa Gateway" as Gateway
+participant "NotificationService" as Notification
+
+Student -> Controller: Initiate Payment Request
+activate Controller
+
+Controller -> Controller: Validate Input
+Controller -> Service: processPayment(enrollment, amount, method)
+activate Service
+
+Service -> Payment: createPaymentRecord()
+activate Payment
+Payment --> Service: Payment Object
+deactivate Payment
+
+Service -> Mpesa: initiateSTKPush(phone, amount)
+activate Mpesa
+Mpesa -> Gateway: STK Push Request
+activate Gateway
+Gateway --> Mpesa: Checkout Request ID
+deactivate Gateway
+Mpesa --> Service: Success Response
+deactivate Mpesa
+
+Service -> Payment: update(status: processing)
+Service --> Controller: Success Response
+deactivate Service
+
+Controller --> Student: Payment Initiated
+deactivate Controller
+
+Gateway -> Controller: Payment Callback
+activate Controller
+Controller -> Service: verifyMpesaCallback(data)
+activate Service
+
+Service -> Payment: find by checkout_request_id
+Service -> Payment: update(status: completed)
+Service -> Payment: markAsCompleted()
+Service -> Notification: sendPaymentConfirmation()
+activate Notification
+Notification --> Student: Email & SMS Notification
+deactivate Notification
+
+Service --> Controller: Verification Success
+deactivate Service
+Controller --> Gateway: Acknowledge
+deactivate Controller
+
+Student -> Controller: View Payment Status
+Controller -> Payment: getPaymentDetails()
+Payment --> Controller: Payment Data
+Controller --> Student: Display Status
+
+@enduml

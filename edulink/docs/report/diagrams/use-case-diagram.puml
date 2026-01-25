@@ -1,0 +1,50 @@
+@startuml Use Case Diagram - Edulink SmartFees
+
+left to right direction
+
+actor Student
+actor Admin as "Administrator"
+actor "Payment Gateway" as Gateway
+
+rectangle "Edulink SmartFees System" {
+    Student --> (Register Account)
+    Student --> (Login)
+    Student --> (View Dashboard)
+    Student --> (Browse Courses)
+    Student --> (Enroll in Course)
+    Student --> (View Enrollments)
+    Student --> (Make Payment)
+    Student --> (View Payment History)
+    Student --> (Download Receipt)
+    Student --> (View Statements)
+    Student --> (Update Profile)
+    Student --> (Create Payment Plan)
+    Student --> (View Notifications)
+    
+    Admin --> (Login)
+    Admin --> (View Dashboard)
+    Admin --> (Manage Students)
+    Admin --> (Manage Courses)
+    Admin --> (Manage Semesters)
+    Admin --> (View Payments)
+    Admin --> (Verify Payment)
+    Admin --> (Process Refund)
+    Admin --> (Manage Fee Structures)
+    Admin --> (Generate Reports)
+    Admin --> (Manage Admins)
+    Admin --> (View Analytics)
+    
+    (Make Payment) --> Gateway
+    (Verify Payment) --> Gateway
+}
+
+note right of (Make Payment)
+  Supports multiple payment methods:
+  - M-Pesa
+  - Stripe
+  - PayPal
+  - Bank Transfer
+  - Cash
+end note
+
+@enduml

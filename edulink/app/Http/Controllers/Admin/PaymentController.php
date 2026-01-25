@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\Course;
 use App\Models\Semester;
 use App\Services\PaymentService;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -18,10 +19,12 @@ use Illuminate\View\View;
 class PaymentController extends Controller
 {
     protected PaymentService $paymentService;
+    protected AuditLogService $auditLogService;
 
-    public function __construct(PaymentService $paymentService)
+    public function __construct(PaymentService $paymentService, AuditLogService $auditLogService)
     {
         $this->paymentService = $paymentService;
+        $this->auditLogService = $auditLogService;
     }
 
     /**
@@ -201,6 +204,13 @@ class PaymentController extends Controller
             ]);
 
             if ($result['success']) {
+                // Log audit trail
+                $this->auditLogService->logPaymentRefund(
+                    $payment->id,
+                    $request->refund_amount,
+                    $request->refund_reason
+                );
+
                 // Create notification for student
                 PaymentNotification::create([
                     'student_id' => $payment->student_id,

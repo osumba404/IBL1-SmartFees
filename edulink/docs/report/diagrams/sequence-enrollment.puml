@@ -1,0 +1,55 @@
+@startuml Sequence Diagram - Student Enrollment Flow
+
+actor Student
+participant "StudentController" as Controller
+participant "Course Model" as Course
+participant "Semester Model" as Semester
+participant "StudentEnrollment" as Enrollment
+participant "FeeStructure" as Fees
+participant "NotificationService" as Notification
+
+Student -> Controller: Browse Courses
+activate Controller
+Controller -> Course: getAvailableCourses()
+Course --> Controller: Course List
+Controller --> Student: Display Courses
+deactivate Controller
+
+Student -> Controller: Select Course
+activate Controller
+Controller -> Course: getCourseDetails()
+Course --> Controller: Course Information
+Controller -> Semester: getActiveSemesters()
+Semester --> Controller: Semester List
+Controller --> Student: Display Enrollment Form
+deactivate Controller
+
+Student -> Controller: Submit Enrollment
+activate Controller
+Controller -> Controller: Validate Input
+Controller -> Course: checkAvailability()
+Course --> Controller: Available
+Controller -> Course: checkCapacity()
+Course --> Controller: Has Capacity
+
+Controller -> Enrollment: create()
+activate Enrollment
+Enrollment -> Fees: calculateTotalFees()
+activate Fees
+Fees --> Enrollment: Total Fee Amount
+deactivate Fees
+
+Enrollment -> Enrollment: setEnrollmentStatus(active)
+Enrollment -> Enrollment: setTotalFeesDue()
+Enrollment --> Controller: Enrollment Created
+deactivate Enrollment
+
+Controller -> Notification: sendEnrollmentConfirmation()
+activate Notification
+Notification -> Student: Email Confirmation
+deactivate Notification
+
+Controller --> Student: Enrollment Success
+deactivate Controller
+
+@enduml
