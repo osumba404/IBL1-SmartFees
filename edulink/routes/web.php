@@ -66,10 +66,24 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::post('/enrollments', [StudentController::class, 'storeEnrollment'])->name('enrollments.store');
         Route::get('/enrollment/success/{enrollment}', [StudentController::class, 'enrollmentSuccess'])->name('enrollment.success');
         Route::get('/enrollment/error', [StudentController::class, 'enrollmentError'])->name('enrollment.error');
+        // Payment processing routes (Create & Initiate MUST be before show/{payment})
+        Route::get('/payments/create', [StudentPaymentController::class, 'create'])->name('payments.create');
+        Route::get('/payment/create', [StudentPaymentController::class, 'create'])->name('payment.create');
+        Route::post('/payments/initiate', [StudentPaymentController::class, 'initiate'])->name('payments.initiate');
+        
+        Route::get('/payments/success', [StudentPaymentController::class, 'success'])->name('payments.success');
+        Route::get('/payments/cancel', [StudentPaymentController::class, 'cancel'])->name('payments.cancel');
+        
+        Route::get('/payments/mpesa/callback', [StudentPaymentController::class, 'mpesaCallback'])->name('payments.mpesa.callback');
+        Route::post('/payments/stripe/webhook', [StudentPaymentController::class, 'stripeWebhook'])->name('payments.stripe.webhook');
+
         Route::get('/fees', [StudentController::class, 'fees'])->name('fees.index');
         Route::get('/payments', [StudentController::class, 'payments'])->name('payments.index');
         Route::get('/payments/history', [StudentController::class, 'paymentHistory'])->name('payments.history');
+        
+        // This is a wildcard route, so it must be AFTER all specific /payments/* routes
         Route::get('/payments/{payment}', [StudentController::class, 'paymentDetails'])->name('payments.show');
+        
         Route::get('/statements', [StudentController::class, 'statements'])->name('statements.index');
         Route::get('/statements/download', [StudentController::class, 'downloadStatement'])->name('statements.download');
         Route::get('/statements/download-pdf', [StudentController::class, 'downloadStatementPDF'])->name('statements.download-pdf');
@@ -77,28 +91,8 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::put('/settings', [StudentController::class, 'updateSettings'])->name('settings.update');
         Route::get('/statements/download', [StudentController::class, 'downloadStatement'])
     ->name('statements.download');
-
-        // Payment processing routes
-        Route::post('/payments/initiate', [StudentPaymentController::class, 'initiate'])->name('payments.initiate');
-        Route::get('/payments/mpesa/callback', [StudentPaymentController::class, 'mpesaCallback'])->name('payments.mpesa.callback');
-        Route::post('/payments/stripe/webhook', [StudentPaymentController::class, 'stripeWebhook'])->name('payments.stripe.webhook');
-        Route::get('/payments/success', [StudentPaymentController::class, 'paymentSuccess'])->name('payments.success');
-        Route::get('/payments/cancel', [StudentPaymentController::class, 'paymentCancel'])->name('payments.cancel');
-        // Route moved above to avoid dependency issues
         
-        // Test route
-        Route::get('/test-payment', function() {
-            return 'Payment route works!';
-        });
-        
-        // Payment routes
-        Route::get('/payments/create', [StudentPaymentController::class, 'create'])->name('payments.create');
-        Route::get('/payment/create', [StudentPaymentController::class, 'create'])->name('payment.create');
-        Route::post('/payments/initiate', [StudentPaymentController::class, 'initiate'])->name('payments.initiate');
-        Route::get('/payments/success', [StudentPaymentController::class, 'success'])->name('payments.success');
-        Route::get('/payments/cancel', [StudentPaymentController::class, 'cancel'])->name('payments.cancel');
-        
-        // Test route without middleware
+        // Test route with middleware
         Route::get('/test-payment', function() {
             return 'Payment route works!';
         })->name('test.payment');
